@@ -11,4 +11,4 @@ backend/__pycache__
 backend/*.pyc
 backend/.env
 .env
-frontend/package-lock.json
+frontend/package-lock.jsonbackend/serviceAccount.json
