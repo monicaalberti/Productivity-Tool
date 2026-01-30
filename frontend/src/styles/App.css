@@ -36,3 +36,16 @@
     transform: rotate(360deg);
   }
 }
+
+.menu-icon {
+  position: fixed;
+  top: 3%;
+  right: 3%;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+h1 a {
+    text-decoration: none;
+    color: inherit;
+}

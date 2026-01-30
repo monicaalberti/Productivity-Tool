@@ -1,0 +1,15 @@
+.register-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px; /* Optional: adds space between elements */
+}
+.register-form input, .register-form button {
+    width: 20%;
+    padding: 3px;
+    box-sizing: border-box;
+    margin: 0 auto;
+    display:block;
+}
+h4 {
+    text-align: center;
+}

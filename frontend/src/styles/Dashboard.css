@@ -1,0 +1,25 @@
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+    padding: 20px;
+}
+h1 {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.account-icon, .account p {
+    position: absolute;
+    top: 20px;
+    left: 30px;
+    cursor: pointer;
+    color: black;
+}
+.logout-button {
+    position: absolute;
+    top: 60px;
+    left: 20px;
+    cursor: pointer;
+    color: black;
+}

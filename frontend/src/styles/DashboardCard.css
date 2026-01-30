@@ -1,0 +1,21 @@
+.dashboard-card {
+  background-color: lightgray;
+  border: 1px solid black;
+  border-radius: 5%;
+  padding: 3%;
+  margin: 3%;
+  width: 250px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-flow: column nowrap;
+  text-align:center;
+  cursor: pointer;
+  transition: 
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.dashboard-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-8px) scale(1.05);
+  width: 260px;
+}
