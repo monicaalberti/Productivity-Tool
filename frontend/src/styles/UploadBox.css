@@ -1,0 +1,21 @@
+.upload-box {
+    background-image: url('../../public/assets/background.avif');
+    width: 60%;
+    filter: brightness(1.2);
+    margin: 20px auto;
+    border: 2px solid gray;
+    padding: 10%;
+    text-align: center;
+    border-radius: 10px;
+}
+
+.upload-box.drag-active {
+    filter: brightness(1.5);
+}
+
+
+.upload-box p {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+

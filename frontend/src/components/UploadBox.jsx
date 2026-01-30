@@ -1,15 +1,23 @@
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import "../styles/UploadBox.css";
+import { useAuth } from "../AuthContext";
 
 function UploadBox() {
-  const onDrop = useCallback((acceptedFiles) => {
+
+  const { user } = useAuth();
+  const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
 
     const formData = new FormData();
     formData.append("file", file);
+    const token = await user.getIdToken();
 
     fetch("http://127.0.0.1:8000/upload", {
       method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      },
       body: formData,
     })
       .then((res) => res.json())
@@ -22,13 +30,9 @@ function UploadBox() {
   return (
     <div
       {...getRootProps()}
+      className={`upload-box ${isDragActive ? 'drag-active' : ''}`}
       style={{
-        border: "2px solid gray",
-        padding: "10%",
-        textAlign: "center",
-        borderRadius: "10px",
         backgroundColor: isDragActive ? "#e0e0e0" : "#f9f9f9",
-        margin:"20px",
       }}
     >
       <input {...getInputProps()} />

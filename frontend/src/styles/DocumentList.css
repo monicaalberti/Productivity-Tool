@@ -1,0 +1,15 @@
+.docs-list {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-flow: row wrap;
+}
+.doc-item {
+    padding: 5%;
+    margin: 5%;
+    border: 1px solid grey;
+    border-radius: 3%;
+}
+h2 {
+    text-align: center;
+}
