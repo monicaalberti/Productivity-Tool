@@ -8,10 +8,11 @@ import models
 from database import get_db
 from auth import get_current_user
 from datetime import timedelta, datetime
-from email_verification import send_verification_email
 import firebase_admin
 from firebase_admin import auth as firebase_auth
 from fastapi.responses import FileResponse
+from summarization.text_extraction import extract_text_from_pdf
+from summarization.summarization import chunk_text, summarize_chunk
 
 
 Base.metadata.create_all(bind=engine)
@@ -52,7 +53,7 @@ def firebase_login(
 # add CORS middleware to allow requests from the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -134,3 +135,55 @@ def get_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     return FileResponse(document.file_path, media_type="application/pdf")
+
+
+# @app.delete("/documents/{document_id}")
+
+@app.get("/documents/{document_id}/summary")
+def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+
+    document = db.query(models.Document).filter(
+        models.Document.id == document_id,
+        models.Document.user_id == firebase_uid
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    full_text = extract_text_from_pdf(document.file_path)
+    chunks = chunk_text(full_text)
+
+    summaries = []
+    for i, c in enumerate(chunks):
+        summaries.append(summarize_chunk(c))
+
+    return {"summary": " ".join(summaries)}
+
+
+from pydantic import BaseModel
+
+class SummarySaveRequest(BaseModel):
+    summary: str
+
+@app.put("/documents/{document_id}/summary")
+def save_summary(
+    document_id: int,
+    summary: SummarySaveRequest,
+    firebase_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    firebase_uid = firebase_user["uid"]
+
+    document = db.query(models.Document).filter(
+        models.Document.id == document_id,
+        models.Document.user_id == firebase_uid
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    document.summary = summary.summary
+    db.commit()
+    db.refresh(document)
+
+    return {"message": "Summary saved"}
+

@@ -9,3 +9,6 @@ frontend/.env
 backend/uploads
 backend/__pycache__
 backend/*.pyc
+*.db
+backend/__pycache__/*
+frontend/package-lock.json

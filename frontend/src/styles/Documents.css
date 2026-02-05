@@ -1,0 +1,46 @@
+.toggle-control {
+    display: block;
+    margin: 20px auto;
+}
+/* Add this to Documents.css */
+
+
+
+/* Documents.css */
+
+/* 1. Force the container to be the oval you want */
+.mantine-SegmentedControl-root {
+  background-color: #f1f3f5 !important; /* Light gray background */
+  display: flex !important;   /* Change from inline-flex to flex */
+  width: 40% !important; /* Adjust width as needed */
+  margin: 2rem auto !important;
+  border-radius: 500px !important;
+  padding: 4px !important;
+  border: 1px solid #dee2e6 !important;
+  transition: all 0.3s ease;
+}
+
+/* 2. Force the blue "pill" to show up */
+.mantine-SegmentedControl-indicator {
+  background-color: #228be6 !important; /* Force the blue */
+  border-radius: 500px !important;
+  z-index: 1 !important; /* Ensure it's under the text but visible */
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1), 
+              width 350ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* 3. Ensure the text labels are visible */
+.mantine-SegmentedControl-label {
+  color: black !important; /* Default dark gray text */
+  z-index: 2 !important;
+  font-weight: 600 !important;
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1), 
+              width 350ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* 4. Ensure active text turns white */
+.mantine-SegmentedControl-label[data-active] {
+  color: white !important;
+  background-color: #228be6;
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1)
+}

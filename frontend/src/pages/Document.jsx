@@ -20,8 +20,8 @@ function Document() {
         return;
     }
 
-    const blob = await response.blob();          // read response as PDF blob
-    const url = URL.createObjectURL(blob);       // create object URL for iframe
+    const blob = await response.blob();      
+    const url = URL.createObjectURL(blob); 
     setContent(url);
 }
 
@@ -34,7 +34,7 @@ function Document() {
         <iframe
             src={content}
             width="100%"
-            height="600"
+            height="800"
         />
     );
 }

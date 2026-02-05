@@ -24,6 +24,7 @@ class Document(Base):
     title = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     upload_date = Column(DateTime, default=datetime.utcnow)
+    summary = Column(Text, nullable=True)
 
     owner = relationship("User", back_populates="documents")
     topics = relationship("DocumentTopic", back_populates="document")

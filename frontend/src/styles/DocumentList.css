@@ -3,10 +3,12 @@
     margin: 0;
     display: flex;
     flex-flow: row wrap;
+    align-items: center;
+    justify-content: center;
 }
 .doc-item {
     padding: 5%;
-    margin: 5%;
+    margin: 1%;
     border: 1px solid grey;
     border-radius: 3%;
 }
