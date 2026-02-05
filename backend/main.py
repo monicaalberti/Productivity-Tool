@@ -14,7 +14,6 @@ from fastapi.responses import FileResponse
 from summarization.text_extraction import extract_text_from_pdf
 from summarization.summarization import chunk_text, summarize_chunk
 
-
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -136,7 +135,6 @@ def get_document(
 
     return FileResponse(document.file_path, media_type="application/pdf")
 
-
 # @app.delete("/documents/{document_id}")
 
 @app.get("/documents/{document_id}/summary")
@@ -186,4 +184,3 @@ def save_summary(
     db.refresh(document)
 
     return {"message": "Summary saved"}
-

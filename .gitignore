@@ -8,7 +8,8 @@ frontend/dist/
 frontend/.env
 backend/uploads
 backend/__pycache__
-backend/*.pyc
 *.db
-backend/__pycache__/*
+backend/.env
+.env
 frontend/package-lock.json
+backend/serviceAccount.json
