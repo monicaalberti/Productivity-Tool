@@ -4,6 +4,7 @@ import { useAuth } from '../AuthContext';
 import { IoIosMenu } from "react-icons/io";
 import SidePanel from '../components/SidePanel';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ReactMarkdown from "react-markdown"
 
 function SummarizePage() {
     const { documentId } = useParams();
@@ -32,7 +33,7 @@ function SummarizePage() {
             }
             const result = await response.json();
             console.log('Summary saved successfully:', result);
-            navigate(`/documents/${documentId}`);
+            navigate(`/documents/${documentId}/dashboard`);
         } catch (err) {
             console.error("Error saving summary:", err);
             setError("Failed to save summary");
@@ -80,7 +81,7 @@ function SummarizePage() {
             {error && <p style={{ color: "red" }}>{error}</p>}
 
             {!loading && !error && (
-                <div
+                <ReactMarkdown
                     style={{
                         whiteSpace: "pre-wrap",
                         wordWrap: "break-word",
@@ -93,7 +94,7 @@ function SummarizePage() {
                     }}
                 >
                     {content || "No summary available."}
-                </div>
+                </ReactMarkdown>
             )}
 
             <button onClick={() => handleSave()} style={{ marginTop: "1rem" }}>

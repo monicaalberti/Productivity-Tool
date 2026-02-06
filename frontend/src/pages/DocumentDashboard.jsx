@@ -50,8 +50,9 @@ function DocumentDashboard() {
                 {documentSummary ? (
                     <div className="dashboard-item">
                         <h2>Summary Viewer</h2>
-                        <p>You already saved a summary for this document. View it here!</p>
-                        <Link to={`/documents/${documentId}/summary/view`} state={{documentTitle: documentTitle, documentSummary: documentSummary}}>View Summary</Link>
+                        <p>You already saved a summary for this document. View it here or generate a new one.</p>
+                        <Link to={`/documents/${documentId}/summary/view`} state={{documentTitle: documentTitle, documentSummary: documentSummary}}>View Summary</Link><br/>
+                        <Link to={`/documents/${documentId}/summary`} state={{documentTitle: documentTitle}}>Generate a New Summary</Link>
                     </div>
                 ) : (
                     <div className="dashboard-item">

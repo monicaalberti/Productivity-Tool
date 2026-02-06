@@ -12,7 +12,7 @@ import firebase_admin
 from firebase_admin import auth as firebase_auth
 from fastapi.responses import FileResponse
 from summarization.text_extraction import extract_text_from_pdf
-from summarization.summarization import chunk_text, summarize_chunk
+from summarization.summarization import summarize
 
 Base.metadata.create_all(bind=engine)
 
@@ -149,13 +149,9 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
         raise HTTPException(status_code=404, detail="Document not found")
 
     full_text = extract_text_from_pdf(document.file_path)
-    chunks = chunk_text(full_text)
+    summary = summarize(full_text)
 
-    summaries = []
-    for i, c in enumerate(chunks):
-        summaries.append(summarize_chunk(c))
-
-    return {"summary": " ".join(summaries)}
+    return {"summary": summary}
 
 
 from pydantic import BaseModel
