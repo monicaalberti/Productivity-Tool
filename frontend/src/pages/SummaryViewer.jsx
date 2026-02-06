@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom"
 import SidePanel from '../components/SidePanel';
 import { IoIosMenu } from "react-icons/io";
 import "../styles/SummaryViewer.css"
+import ReactMarkdown from "react-markdown"
 
 function SummaryViewer() {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +15,7 @@ function SummaryViewer() {
         <div>
             <h1>StudyWeave - {title}</h1>
             <IoIosMenu className="menu-icon" size={30} title="Menu" onClick={() => setIsOpen(!isOpen)} />
-            <p>{summary}</p>
+            <div className="markdown-container"><ReactMarkdown>{summary}</ReactMarkdown></div>
             <SidePanel isOpen={isOpen} setIsOpen={setIsOpen} />
         </div>
 

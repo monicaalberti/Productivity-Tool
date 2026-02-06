@@ -1,57 +1,38 @@
-import os
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-os.environ["HF_HUB_DISABLE_REPO_ID_VALIDATION"] = "1"
+import google.generativeai as genai
 
+genai.configure(api_key="AIzaSyBx5m_-k-tSkZX81ZD4eTXrbf0OPXmUOrM")
 
-import torch
-from pathlib import Path
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+model = genai.GenerativeModel("gemini-2.5-flash")
 
-BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = str(BASE_DIR)
-
-tokenizer = AutoTokenizer.from_pretrained(
-    MODEL_PATH,
-    local_files_only=True
-)
-
-model = AutoModelForSeq2SeqLM.from_pretrained(
-    MODEL_PATH,
-    local_files_only=True
-)
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-model.eval()
-
-
-def chunk_text(text, max_tokens=900):
-    tokens = tokenizer.encode(text, truncation=False)
+def summarize(text, chunk_size=12000, overlap=500):
     chunks = []
+    start = 0
 
-    for i in range(0, len(tokens), max_tokens):
-        chunk = tokens[i:i + max_tokens]
-        chunks.append(tokenizer.decode(chunk, skip_special_tokens=True))
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += chunk_size - overlap
 
-    return chunks
+    summaries = []
 
-def summarize_chunk(text):
-    inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=1024
-    ).to(device)
+    for chunk in chunks:
+        response = model.generate_content(
+            f"""
+            Summarize the following academic text into clear bullet points:
 
-    with torch.no_grad():
-        summary_ids = model.generate(
-            inputs["input_ids"],
-            max_length=500,
-            min_length=300,
-            num_beams=4,
-            length_penalty=2.0,
-            early_stopping=True
+            {chunk}
+            """
         )
+        summaries.append(response.text)
 
-    return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+    final_summary = model.generate_content(
+        f"""
+        Combine the following summaries into a single structured academic summary
+        using headings and bullet points:
+
+        {chr(10).join(summaries)}
+        """
+    )
+    return final_summary.text
+
