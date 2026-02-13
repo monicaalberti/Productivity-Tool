@@ -21,7 +21,12 @@ model = AutoModelForSeq2SeqLM.from_pretrained(
     local_files_only=True
 )
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(
+    "mps" if torch.backends.mps.is_available()
+    else "cuda" if torch.cuda.is_available()
+    else "cpu"
+)
+
 model.to(device)
 model.eval()
 

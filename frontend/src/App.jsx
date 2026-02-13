@@ -34,6 +34,7 @@ function App() {
             <Route path="/documents/:documentId" element={<ProtectedRoute><Document /></ProtectedRoute>} />
             <Route path="/documents/:documentId/summary" element={<ProtectedRoute><SummarizePage /></ProtectedRoute>} />
             <Route path="/documents/:documentId/summary/view" element={<ProtectedRoute><SummaryViewer /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><SummaryViewer /></ProtectedRoute>} />
           </Routes>
         </AuthProvider>
       </Router>

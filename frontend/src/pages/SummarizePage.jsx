@@ -32,7 +32,7 @@ function SummarizePage() {
             }
             const result = await response.json();
             console.log('Summary saved successfully:', result);
-            navigate(`/documents/${documentId}`);
+            navigate(`/documents/${documentId}/dashboard`);
         } catch (err) {
             console.error("Error saving summary:", err);
             setError("Failed to save summary");
