@@ -1,0 +1,12 @@
+.advice {
+    color: gray;
+}
+.smiley {
+    display: block;
+    margin: auto;
+}
+.entry-container {
+    background-color: #f9f9f9;
+    border-radius: 20px;
+    padding: 5%;
+}

@@ -15,6 +15,11 @@ import Document from "./pages/Document";
 import DocumentDashboard from "./pages/DocumentDashboard";
 import SummarizePage from "./pages/SummarizePage";
 import SummaryViewer from "./pages/SummaryViewer"
+import TopicDashboard from "./pages/TopicDashboard"
+import TopicSummarizePage from "./pages/TopicSummarizePage"
+import TopicSummaryViewer from "./pages/TopicSummaryViewer"
+import JournalPage from "./pages/JournalPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 function App() {
   return (
@@ -31,10 +36,14 @@ function App() {
             <Route path="/upload" element={<ProtectedRoute><DocumentUpload /></ProtectedRoute>} />
             <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
             <Route path="/documents/:documentId/dashboard" element={<ProtectedRoute><DocumentDashboard /></ProtectedRoute>} />
+            <Route path="/topics/:topicId/dashboard" element={<ProtectedRoute><TopicDashboard /></ProtectedRoute>} />
             <Route path="/documents/:documentId" element={<ProtectedRoute><Document /></ProtectedRoute>} />
             <Route path="/documents/:documentId/summary" element={<ProtectedRoute><SummarizePage /></ProtectedRoute>} />
+            <Route path="/topics/:topicId/summary" element={<ProtectedRoute><TopicSummarizePage /></ProtectedRoute>} />
             <Route path="/documents/:documentId/summary/view" element={<ProtectedRoute><SummaryViewer /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><SummaryViewer /></ProtectedRoute>} />
+            <Route path="/topics/:topicId/summary/view" element={<ProtectedRoute><TopicSummaryViewer /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+            <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
           </Routes>
         </AuthProvider>
       </Router>

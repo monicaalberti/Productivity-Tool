@@ -35,6 +35,8 @@ class Topic(Base):
     user_id = Column(String, ForeignKey("users.firebase_uid"))
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
+    embedding = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
 
     owner = relationship("User", back_populates="topics")
     documents = relationship("DocumentTopic", back_populates="topic")
@@ -74,7 +76,9 @@ class JournalEntry(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(String, ForeignKey("users.firebase_uid"))
     content = Column(Text, nullable=False)
+    top_emotion = Column(Text, nullable=True)
     sentiment_score = Column(Float, nullable=True)
+    sentiment_polarity = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="journal_entries")

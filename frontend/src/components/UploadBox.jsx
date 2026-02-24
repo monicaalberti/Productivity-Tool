@@ -1,42 +1,70 @@
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { useNavigate } from "react-router-dom";
 import "../styles/UploadBox.css";
 import { useAuth } from "../AuthContext";
 
 function UploadBox() {
-
   const { user } = useAuth();
-  const onDrop = useCallback(async (acceptedFiles) => {
-    const file = acceptedFiles[0];
+  const navigate = useNavigate();
 
-    const formData = new FormData();
-    formData.append("file", file);
-    const token = await user.getIdToken();
+  const onDrop = useCallback(
+    async (acceptedFiles) => {
+      try {
+        if (!user) {
+          console.error("User not authenticated");
+          return;
+        }
 
-    fetch("http://127.0.0.1:8000/upload", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      },
-      body: formData,
-    })
-      .then((res) => res.json())
-      .then(console.log)
-      .catch(console.error);
-  }, []);
+        const file = acceptedFiles[0];
+        if (!file) return;
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const token = await user.getIdToken();
+
+        const response = await fetch("http://127.0.0.1:8000/upload", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const data = await response.json();
+        console.log("Upload successful:", data);
+
+        // Navigate only after successful upload
+        navigate("/documents");
+      } catch (error) {
+        console.error("Upload error:", error);
+      }
+    },
+    [user, navigate]
+  );
+
+  const { getRootProps, getInputProps, isDragActive } =
+    useDropzone({ onDrop });
 
   return (
     <div
       {...getRootProps()}
-      className={`upload-box ${isDragActive ? 'drag-active' : ''}`}
+      className={`upload-box ${isDragActive ? "drag-active" : ""}`}
       style={{
         backgroundColor: isDragActive ? "#e0e0e0" : "#f9f9f9",
       }}
     >
       <input {...getInputProps()} />
-      {isDragActive ? <p>Drop the file here...</p> : <p>Drag & drop a file here, or click to select</p>}
+      {isDragActive ? (
+        <p>Drop the file here...</p>
+      ) : (
+        <p>Drag & drop a file here, or click to select</p>
+      )}
     </div>
   );
 }

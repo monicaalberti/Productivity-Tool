@@ -11,7 +11,24 @@
     margin: 1%;
     border: 1px solid grey;
     border-radius: 3%;
+    position: relative;
 }
+.topic-item {
+    padding: 5%;
+    margin: 1%;
+    border: 1px solid grey;
+    border-radius: 3%;
+
+}
+
 h2 {
     text-align: center;
+}
+
+.delete-icon{
+    position: absolute;
+    top: 3%;
+    right: 3%;
+    cursor: pointer;
+    z-index: 1000;
 }

@@ -54,7 +54,7 @@ function Dashboard() {
         <DashboardCard
           title="Diary"
           description="Write reflections on your work and mindfulness."
-          link="/diary"
+          link="/journal"
           Icon={IoJournalOutline}
         />
 

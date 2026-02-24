@@ -1,0 +1,12 @@
+.doc-item {
+    width: 40%;
+}
+.dashboard-item {
+    width: 90%;
+    margin: 0 auto;
+}
+.topic-list {
+    display: flex;
+    flex-flow: row wrap;
+
+}
