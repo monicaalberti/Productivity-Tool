@@ -7,9 +7,11 @@ function DashboardCard({ title, description, link, Icon }) {
 
   return (
     <div className="dashboard-card" onClick={() => navigate(link)}>
-      <h2>{title}</h2>
-      <p>{description}</p>
-      {Icon && <Icon className="card-icon" />}
+      <div className="header-wrapper">
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      {Icon && <Icon className="card-icon" size={40} />}
     </div>
   );
 }

@@ -20,6 +20,8 @@ import TopicSummarizePage from "./pages/TopicSummarizePage"
 import TopicSummaryViewer from "./pages/TopicSummaryViewer"
 import JournalPage from "./pages/JournalPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import MindMap from "./pages/MindMap";
+import KanbanPage from "./pages/KanbanPage";
 
 function App() {
   return (
@@ -44,6 +46,8 @@ function App() {
             <Route path="/topics/:topicId/summary/view" element={<ProtectedRoute><TopicSummaryViewer /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
+            <Route path="/documents/:documentId/mindmap" element={<ProtectedRoute><MindMap /></ProtectedRoute>} />
+            <Route path="/documents/:documentId/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
           </Routes>
         </AuthProvider>
       </Router>

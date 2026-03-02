@@ -10,7 +10,7 @@ function TopicDashboard() {
     const topicId = location?.state?.topicId;
     const topicName = location?.state?.topicLabel;
     const docs = location?.state?.documents;
-    const summary = location?.state?.summary;
+    const summary = location?.state?.topicSummary;
     
     const [isOpen, setIsOpen] = useState(false);
 
@@ -53,7 +53,7 @@ function TopicDashboard() {
                     <div className="dashboard-item">
                         <h2>Collective Summary Viewer</h2>
                         <p>You already have a summary for this topic. View it here or generate a new one!</p>
-                        <Link to={`/topics/${topicId}/summary/view`} state={{"topicSummary": summary}}>View Summary</Link>
+                        <Link to={`/topics/${topicId}/summary/view`} state={{"topicName": topicName, "topicSummary": summary}}>View Summary</Link><br/>
                         <Link to={`/topics/${topicId}/summary`} state={{"topicName": topicName }}>Generate new Summary</Link>
                     </div>
                 ) : (

@@ -3,10 +3,10 @@ from optimum.onnxruntime import ORTModelForSequenceClassification
 from transformers import pipeline
 import os
 
-MODEL_PATH = os.path.dirname(os.path.abspath(__file__))
+model_id = "SamLowe/roberta-base-go_emotions-onnx"
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-model = ORTModelForSequenceClassification.from_pretrained(MODEL_PATH, file_name="model.onnx")
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = ORTModelForSequenceClassification.from_pretrained(model_id)
 
 emotion_classifier = pipeline(
     "text-classification",

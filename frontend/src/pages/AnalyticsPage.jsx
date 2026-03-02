@@ -35,22 +35,21 @@ function AnalyticsPage() {
 
     return (
         <div className="analytics-container">
-            <h1>Studyweave - My Analytics</h1>
+            <h1><a href="/">StudyWeave - My Analytics</a></h1>
             <IoIosMenu className="menu-icon" size={30} onClick={() => setIsOpen(true)} />
-            <p>Welcome to your analytics dashboard!</p>
             <div className="progress-analytics">
 
             </div>
             <div className="sentiment-analytics">
                 <h3>Sentiment Trends Over Time</h3>
-                <p>These are your sentiment trends overtime, taken from your journal entries.<br/>
+                <p className="intro">These are your sentiment trends overtime, taken from your journal entries.<br/>
                 If you see a downward trend, make sure to take care of your wellbeing. Take regular breaks from studying, 
                 exercise regularly, and if the stress feels like too much, consider talking to friends, 
                 family or the university's student support services.</p>
-                <LineChart className="sentiment-chart" width={600} height={300} data={sentimentTrends}>
+                <LineChart className="sentiment-chart" width={650} height={400} data={sentimentTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
-                    <YAxis domain={[-1, 1]} label={{value: "Sentiment Polarity", angle: -90, position: 'insideLeft'}} />
+                    <YAxis domain={[-1, 1]} />
                     <Tooltip />
                     <Line type="monotone" dataKey="sentiment_polarity" stroke="#8884d8" />
                 </LineChart>

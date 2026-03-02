@@ -1,3 +1,4 @@
+from unittest import result
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, APIRouter, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -12,9 +13,15 @@ import firebase_admin
 from firebase_admin import auth as firebase_auth
 from fastapi.responses import FileResponse
 from summarization.text_extraction import extract_text_from_pdf
-from summarization.summarization import chunk_text, summarize_chunk
+# from summarization.summarization import chunk_text, summarize_chunk
 from topics.topic_extraction import assign_topic
 from sentiment_analysis.classify_emotions import classify_emotions
+from fastapi.responses import StreamingResponse
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+import io
+import markdown2
+from weasyprint import HTML
 
 
 Base.metadata.create_all(bind=engine)
@@ -174,7 +181,7 @@ def delete_doc(
 
     return {"message": f"Document {document.title} deleted successfully"}
 
-
+import subprocess
 @app.get("/documents/{document_id}/summary")
 def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
     firebase_uid = firebase_user["uid"]
@@ -187,13 +194,43 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
         raise HTTPException(status_code=404, detail="Document not found")
 
     full_text = extract_text_from_pdf(document.file_path)
-    chunks = chunk_text(full_text)
+    prompt = f""" Write a detailed summary of the following document. 
+    Cover all major concepts, arguments, and technical details.
+    Write in formal academic tone.
+    Document:\n\n{full_text}"""
 
-    summaries = []
-    for i, c in enumerate(chunks):
-        summaries.append(summarize_chunk(c))
+    try:
+        result = subprocess.run(
+                ["ollama", "run", "gemma3:1b", prompt],
+                capture_output=True,
+                text=True,
+                timeout=500  # prevent infinite freeze
+            )        
 
-    return {"summary": " ".join(summaries)}
+        return {"summary": result.stdout.strip()}
+    except:
+        return {"summary": "Error generating summary. Please try again."}
+#     final_response = requests.post(
+#     "http://localhost:11434/api/generate",
+#     json={
+#         "model": "gemma3:1b",
+#         "prompt": f"Create a final concise summary from this:\n\n{full_text}",
+#         "stream": True
+#     }
+# )
+
+#     return {"summary": final_response}
+
+#     summaries = []
+#     for i, c in enumerate(chunks):
+#         summaries.append(summarize_chunk(c))
+
+#     return {"summary": " ".join(summaries)}
+
+
+def chunk_list(items, batch_size):
+    for i in range(0, len(items), batch_size):
+        yield items[i:i + batch_size]
 
 @app.get("/topics/{topic_id}/summary")
 def collective_summary(topic_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
@@ -204,6 +241,7 @@ def collective_summary(topic_id: int, firebase_user=Depends(get_current_user), d
         models.Topic.user_id == firebase_uid
     ).first()
     document_ids = []
+    texts = []
     for dt in topic.documents:
         if dt.document is not None:
             document_ids.append(dt.document.id)
@@ -212,13 +250,65 @@ def collective_summary(topic_id: int, firebase_user=Depends(get_current_user), d
             models.Document.id == id,
             models.Document.user_id == firebase_uid
         ).first()
-        full_text += extract_text_from_pdf(doc.file_path)
-    chunks = chunk_text(full_text)
-    summaries = []
-    for i, c in enumerate(chunks):
-        summaries.append(summarize_chunk(c))
+        texts.append(extract_text_from_pdf(doc.file_path))
 
-    return {"summary": " ".join(summaries)}
+    prompt = """ Write a detailed summary of the following document. 
+    Cover all major concepts, arguments, and technical details.
+    Write in formal academic tone.
+    Document:\n\n
+    """
+    summaries = []
+    for doc in texts:
+        try:
+            result = subprocess.run(
+                    ["ollama", "run", "gemma3:1b", prompt + doc],
+                    capture_output=True,
+                    text=True,
+                timeout=500  # prevent infinite freeze
+            )        
+            summaries.append(result.stdout.strip())
+        except:
+            summaries.append("Error generating this summary.")
+
+    BATCH_SIZE = 6
+    while len(summaries) > 1:
+        new_level = []
+        
+        for batch in chunk_list(summaries, BATCH_SIZE):
+            combined_text = "\n\n".join(batch)
+
+            prompt = f"""
+            You are synthesizing summaries of documents within the same topic.
+
+            Tasks:
+            1. Identify recurring themes
+            2. Extract key insights
+            3. Preserve important technical details
+            4. Produce a structured synthesis
+
+            Summaries:
+            {combined_text}
+            """
+
+            result = subprocess.run(
+                ["ollama", "run", "gemma3:1b", prompt],
+                capture_output=True,
+                text=True,
+                timeout=500
+            )
+
+            new_level.append(result.stdout.strip())
+        
+        summaries = new_level  # move up one level
+    
+    return {"summary": summaries[0]} 
+    # full_text = " ".join(texts)
+    # chunks = chunk_text(full_text)
+    # summaries = []
+    # for i, c in enumerate(chunks):
+        # summaries.append(summarize_chunk(c))
+
+    # return {"summary": " ".join(summaries)}
 
 
 
@@ -272,6 +362,50 @@ def save_summary(
 
     return {"message": "Summary saved"}
 
+@app.get("/documents/{document_id}/summary/download")
+async def download_summary_pdf(document_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+    doc = db.query(models.Document).filter(
+        models.Document.id == document_id,
+        models.Document.user_id == firebase_uid
+    ).first()
+    if not doc or not doc.summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+    
+    html_content = markdown2.markdown(doc.summary)
+
+    pdf_buffer = io.BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=summary_{document_id}.pdf"}
+    )
+
+@app.get("/topics/{topic_id}/summary/download")
+async def download_summary_pdf(topic_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+    topic = db.query(models.Topic).filter(
+        models.Topic.id == topic_id,
+        models.Topic.user_id == firebase_uid
+    ).first()
+    if not topic or not topic.summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+    
+    html_content = markdown2.markdown(topic.summary)
+
+    pdf_buffer = io.BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=summary_{topic_id}.pdf"}
+    )
+
 
 from sqlalchemy.orm import joinedload
 
@@ -297,7 +431,8 @@ def get_topics(firebase_user=Depends(get_current_user), db: Session = Depends(ge
         results.append({
             "id": topic.id,
             "name": topic.name,
-            "documents": docs
+            "documents": docs,
+            "summary": topic.summary or None
         })
         
 
@@ -313,7 +448,6 @@ def get_entries(firebase_user=Depends(get_current_user), db: Session = Depends(g
     return {"entries": entries}
 
 
-from textblob import TextBlob
 
 class EntryContentModel(BaseModel):
     content: str
@@ -328,24 +462,12 @@ def save_entry(entry: EntryContentModel, firebase_user=Depends(get_current_user)
     analysis = classify_emotions(entry.content)
     top_emotion = analysis["top_emotion"]
     sentiment_score = analysis["sentiment_score"]
-    positive_score = 0
-    negative_score = 0
 
     all_emotions = analysis["all_emotions"]
     positive_score = sum(all_emotions[e] for e in positive_emotions if e in all_emotions)
     negative_score = sum(all_emotions[e] for e in negative_emotions if e in all_emotions)
 
-    if positive_score > negative_score:
-        sentiment_polarity = 1
-    elif negative_score > positive_score:
-        sentiment_polarity = -1
-    else:
-        sentiment_polarity = 0
-
-    print("positive score:", positive_score)
-    print("negative score:", negative_score)
-    print("sentiment polarity:", sentiment_polarity)
-
+    sentiment_polarity = positive_score - negative_score
 
     new_entry = models.JournalEntry(
         user_id=user_id,
@@ -379,3 +501,68 @@ def get_analytics(firebase_user=Depends(get_current_user), db: Session = Depends
     ]
 
     return data
+
+import json
+import re
+@app.get('/documents/{document_id}/mindmap')
+def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+
+    document = db.query(models.Document).filter(
+        models.Document.id == document_id,
+        models.Document.user_id == firebase_uid
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    full_text = extract_text_from_pdf(document.file_path)
+    prompt = """Generate a mindmap JSON for this document linking topics and subtopics. Return in JSON format. Here is an example of what the JSON should look like:
+        {
+        "name": "Root Topic",
+        "children": [
+            {
+            "name": "Subtopic 1",
+            "children": [
+                {
+                "name": "Sub-subtopic 1",
+                "children": []
+                },
+                {
+                "name": "Sub-subtopic 2",
+                "children": []
+                }  
+            },
+            {
+            "name": "Subtopic 2",
+            "children": []
+            }
+        ]
+        }    
+        The only keys should be "name" and "children". The "name" should be a concise topic or subtopic name. The "children" should be a list of subtopics that fall under that topic.
+        Document:
+        """ + full_text
+
+
+
+    try:
+        result = subprocess.run(
+                ["ollama", "run", "gemma3:1b", prompt],
+                capture_output=True,
+                text=True,
+                timeout=500
+            ) 
+        
+        raw_output = result.stdout.strip()
+        # print("Raw output from model:", raw_output)  # Debugging line
+        cleaned = re.sub(r"```json|```", "", raw_output).strip()
+        print("Cleaned output from model:", cleaned)  # Debugging line
+        try:
+            mindmap_json = json.loads(cleaned)
+        except json.JSONDecodeError:
+            return {"error": "Model did not return valid JSON"}
+
+        return {"mindmap": mindmap_json}       
+
+        # return {"mindmap": result.stdout.strip()}
+    except:
+        return {"mindmap": "Error generating mindmap. Please try again."}

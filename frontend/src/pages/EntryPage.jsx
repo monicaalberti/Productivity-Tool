@@ -29,9 +29,9 @@ function EntryPage({entry}) {
     }
 
     const advice = (sentimentScore) => {
-        if (sentimentScore === -1) {
+        if (sentimentScore < -0.5) {
             return "You seem a bit stressed. Remember to take regular breaks and stay active."
-        } else if (sentimentScore === 1) {
+        } else if (sentimentScore >= 0.5) {
             return "Great to see you're having a good day! Keep up the habits that make you feel good."
         } else {
             return "Your entry seems neutral today. It's okay to have calm or routine days. Keep reflecting on your progress!"
@@ -71,7 +71,7 @@ function EntryPage({entry}) {
 
     return (
         <div className="entry-container">
-            <h2>Studyweave - Viewing Past Entry</h2>
+            <h2>StudyWeave - Viewing Past Entry</h2>
             <h3>{formatDate(entry.created_at)}</h3>
             <p>{formatContent(entry.content)}</p>
             <div>

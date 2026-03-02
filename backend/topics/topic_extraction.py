@@ -75,8 +75,9 @@ def assign_topic(db, firebase_uid, document_id, threshold=0.60, distance_thresho
 
     # 2️⃣ Check existing topics
     topics = db.query(models.Topic).filter_by(user_id=firebase_uid).all()
-    best_topic = None
-    best_score = 0
+    # best_topic = None
+    # best_score = 0
+    relevant_topics = []
 
     for topic in topics:
         if not topic.embedding:
@@ -93,63 +94,69 @@ def assign_topic(db, firebase_uid, document_id, threshold=0.60, distance_thresho
         topic_embedding = normalize(np.array(topic_vec, dtype=np.float32).reshape(1, -1))
         score = cosine_similarity(doc_embedding, topic_embedding)[0][0]
 
-        if score > best_score:
-            best_score = score
-            best_topic = topic
+        if score >= threshold:
+            relevant_topics.append((topic, score))
 
-    # 3️⃣ Attach to best existing topic if above threshold
-    if best_topic and best_score >= threshold:
-        dt = models.DocumentTopic(
-            document=doc,
-            topic=best_topic,
-            relevance_score=float(best_score)
-        )
-        db.add(dt)
+    if relevant_topics:
 
-        old_vec = best_topic.embedding
-        if isinstance(old_vec, str):
-            old_vec = json.loads(old_vec)
-        old_vec = np.array(old_vec, dtype=np.float32)
+        for topic, score in relevant_topics:
 
-        new_vec = (old_vec + doc_embedding[0]) / 2
-        best_topic.embedding = json.dumps(new_vec.tolist())
+            # Prevent duplicate linking
+            existing_link = db.query(models.DocumentTopic).filter_by(
+                document_id=doc.id,
+                topic_id=topic.id
+            ).first()
 
-        # Get ALL documents in this topic
-        linked_docs = (
-            db.query(models.Document)
-            .join(models.DocumentTopic)
-            .filter(models.DocumentTopic.topic_id == best_topic.id)
-            .all()
-        )
+            if not existing_link:
+                dt = models.DocumentTopic(
+                    document=doc,
+                    topic=topic,
+                    relevance_score=float(score)
+                )
+                db.add(dt)
 
-        # Combine their text
-        combined_text = " ".join(
-            f"{d.title} {extract_text_from_pdf(d.file_path)}"
-            for d in linked_docs
-        )
+            old_vec = topic.embedding
+            if isinstance(old_vec, str):
+                old_vec = json.loads(old_vec)
 
-        # Lemmatize with fallback
-        lemmas = lemmatize_text(combined_text)
-        print("LEMMAS PER L'AMOR DI DIO TI PREGO: ", lemmas)
-        if not lemmas:
-            lemmas = combined_text.split()  # fallback if lemmatizer returns empty
+            old_vec = np.array(old_vec, dtype=np.float32)
+            new_vec = (old_vec + doc_embedding[0]) / 2
+            topic.embedding = json.dumps(new_vec.tolist())
 
-        # Run TF-IDF on lemmatized text
-        vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_features=50)
-        tfidf_matrix = vectorizer.fit_transform([" ".join(lemmas)])
-        terms = vectorizer.get_feature_names_out()
-        scores = tfidf_matrix.toarray()[0]
+            linked_docs = (
+                db.query(models.Document)
+                .join(models.DocumentTopic)
+                .filter(models.DocumentTopic.topic_id == topic.id)
+                .all()
+            )
 
-        # if len(terms) == 0:
-        #     top_keywords = ["untitled"]
-        # else:
-        top_keywords = [terms[i] for i in scores.argsort()[::-1][:2]]
-        print("TOP KEYWORDS AFTER MERGING: ", top_keywords)
+            combined_text = " ".join(
+                f"{d.title} {extract_text_from_pdf(d.file_path)}"
+                for d in linked_docs
+            )
 
-        best_topic.name = ", ".join(top_keywords)
+            lemmas = lemmatize_text(combined_text)
+
+            if not lemmas:
+                lemmas = combined_text.split()
+
+            vectorizer = TfidfVectorizer(
+                ngram_range=(1, 2),
+                max_features=50
+            )
+
+            tfidf_matrix = vectorizer.fit_transform([" ".join(lemmas)])
+            terms = vectorizer.get_feature_names_out()
+            scores_array = tfidf_matrix.toarray()[0]
+
+            if len(terms) > 0:
+                top_keywords = [
+                    terms[i] for i in scores_array.argsort()[::-1][:2]
+                ]
+                topic.name = ", ".join(top_keywords)
 
         db.commit()
-        print(f"Added to existing topic '{best_topic.name}' (score={best_score:.2f})")
+        print(f"Document assigned to {len(relevant_topics)} topic(s) and names updated.")
         return
 
     # 4️⃣ No matching topic → create new topic via clustering all user docs

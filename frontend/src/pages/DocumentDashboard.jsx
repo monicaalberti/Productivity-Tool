@@ -61,6 +61,11 @@ function DocumentDashboard() {
                         <Link to={`/documents/${documentId}/summary`} state={{ documentTitle: documentTitle }} className="view-link">Generate Summary</Link>
                     </div>
                 )}
+                <div className="dashboard-item">
+                    <h2>Mindmap</h2>
+                    <p>Visualize the structure of the document with a mindmap.</p>
+                    <Link to={`/documents/${documentId}/mindmap`} state={{ documentTitle: documentTitle }} className="view-link">View Mindmap</Link>
+                </div>
                 
             
             </div>

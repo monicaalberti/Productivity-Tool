@@ -1,0 +1,39 @@
+.mindmap-tree {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: bisque;
+}
+.mindmap-wrapper {
+    width: 100%;
+    height: 100vh;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* The circles */
+.rd3t-node {
+  fill: #4a90e2;
+  stroke: #2c3e50;
+  stroke-width: 2;
+}
+
+/* The lines (links) */
+.rd3t-link {
+  stroke: #bdc3c7;
+  stroke-width: 2;
+  stroke-dasharray: 4; /* Makes them dashed if you want a "woven" look */
+}
+
+/* The text labels */
+.rd3t-label__title {
+  fill: #2c3e50;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  text-shadow: 1px 1px 2px white; /* Helps readability on busy maps */
+}

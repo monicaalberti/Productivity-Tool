@@ -52,7 +52,9 @@ function UploadBox() {
     useDropzone({ onDrop });
 
   return (
-    <div
+    <div>
+      <input className="upload-button" type="file" onChange={handleUpload} />
+      <div
       {...getRootProps()}
       className={`upload-box ${isDragActive ? "drag-active" : ""}`}
       style={{
@@ -66,6 +68,8 @@ function UploadBox() {
         <p>Drag & drop a file here, or click to select</p>
       )}
     </div>
+    </div>
+    
   );
 }
 

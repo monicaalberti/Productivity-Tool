@@ -3,7 +3,7 @@ import JournalEditor from '../components/JournalEditor';
 import { useAuth } from '../AuthContext';
 import '../styles/JournalPage.css'
 import { IoIosAdd } from "react-icons/io";
-import EntryPage from "../components/EntryPage";
+import EntryPage from "./EntryPage";
 import SidePanel from "../components/SidePanel";
 import { IoIosMenu } from "react-icons/io";
 
@@ -95,7 +95,7 @@ function JournalPage() {
                 )}
             </div>
             <div className="entry-editor">
-                <h1>Studyweave - My Journal</h1>
+                <h1><a href="/">StudyWeave - My Journal</a></h1>
     
                 {selectedEntry && selectedEntry != "New" ? (
                     <EntryPage entry={selectedEntry} />
