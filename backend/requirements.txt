@@ -43,6 +43,8 @@ msgpack==1.1.2
 murmurhash==1.0.15
 nltk==3.9.2
 numpy==2.4.0
+onnxruntime==1.15.1
+onnxruntime-tools==1.15.1
 optimum==2.1.0
 optimum_onnx==0.1.0
 packaging==25.0
@@ -84,7 +86,7 @@ starlette==0.50.0
 thinc==8.3.10
 tokenizers==0.22.2
 tqdm==4.67.1
-transformers==5.0.0
+transformers==4.57.1
 typer-slim==0.21.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0

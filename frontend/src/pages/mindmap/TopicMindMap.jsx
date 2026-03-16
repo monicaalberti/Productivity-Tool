@@ -37,43 +37,6 @@ function TopicMindMap() {
         }
     };
 
-    const handleDownload = () => {
-        const svg = treeContainerRef.current?.querySelector('svg');
-        if (!svg) return;
-
-        const bbox = svg.getBBox();
-        const padding = 40;
-
-        const cloned = svg.cloneNode(true);
-
-        cloned.setAttribute('width', bbox.width + padding * 2);
-        cloned.setAttribute('height', bbox.height + padding * 2);
-        cloned.setAttribute(
-            'viewBox',
-            `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`
-        );
-
-        const serializer = new XMLSerializer();
-        let source = serializer.serializeToString(cloned);
-
-        if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
-            source = source.replace(
-                /^<svg/,
-                '<svg xmlns="http://www.w3.org/2000/svg"'
-            );
-        }
-
-        const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(source);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'mindmap.svg';
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
     useEffect(() => {
         const fetchMindMapData = async () => {
             const token = await user.getIdToken();
@@ -100,7 +63,6 @@ function TopicMindMap() {
                     <div className="button-container">
                         <button className="save-button" onClick={handleSave}>Save</button>
                         <button className="save-button" onClick={() => navigate('/documents')}>Discard</button>
-                        <MdOutlineFileDownload className="download-icon" size={30} title="Download Mindmap" onClick={handleDownload} />
                     </div>
                     <div className="mindmap-wrapper">
                         <Tree 
