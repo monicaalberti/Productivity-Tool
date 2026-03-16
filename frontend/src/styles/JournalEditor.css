@@ -1,9 +1,23 @@
 .entry-page {
-    background-color:#f9f9f9;
+    background-color:whitesmoke;
 }
 .journal-editor {
-    background-color: #f9f9f9;
+    background-color: whitesmoke;
 }
 .editor {
     height:400px;
+}
+.editor-palette > button {
+    border: 1px solid rgb(43, 43, 241);
+    background-color: whitesmoke;
+    color: rgb(43, 43, 241);
+    border-radius: 10px;
+    margin: 1%;
+    transition:
+        background-color 0.3 ease,
+        color 0.3 ease;
+}
+.editor-palette > button:hover {
+    background-color: rgb(43, 43, 241);
+    color: white;
 }

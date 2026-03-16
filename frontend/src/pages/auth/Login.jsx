@@ -31,33 +31,36 @@ function Login() {
 
   return (
     <div className="login-container">
+      <div className="header">
+          <h1><a href="/"><span className="highlight">StudyWeave</span> - Login to your account</a></h1>
+          <IoIosMenu className="menu-icon" size={40} title="Menu" onClick={() => setIsOpen(!isOpen)} />
+      </div>
+
+      <div className="login-form-container">
+          <h4>Login form:</h4>
+          <form className="login-form" onSubmit={handleLogin}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <button className="login-button" type="submit">Login</button>
+          </form>
+          <h5>Don't have an account yet?</h5>
+          <Link className="register-link" to="/register">Register here👈🏼</Link>
+      </div>
       
-      <h1><a href="/">StudyWeave - Login to your account</a></h1>
-      <IoIosMenu className="menu-icon" size={30} title="Menu" onClick={() => setIsOpen(!isOpen)} />
-      
-      <h4>Login form:</h4>
-      <form className="login-form" onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        <button type="submit">Login</button>
-      </form>
-      <h5>Don't have an account yet?</h5>
-      <Link className="register-link" to="/register">Register here👈🏼</Link>
-
       <SidePanel isOpen={isOpen} setIsOpen={setIsOpen} />
 
       {error && <p>{error}</p>}

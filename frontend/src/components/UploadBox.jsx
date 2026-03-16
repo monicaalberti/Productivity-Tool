@@ -3,6 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { useNavigate } from "react-router-dom";
 import "../styles/UploadBox.css";
 import { useAuth } from "../AuthContext";
+import { IoCloudUploadOutline } from "react-icons/io5";
 
 function UploadBox() {
   const { user } = useAuth();
@@ -15,31 +16,23 @@ function UploadBox() {
           console.error("User not authenticated");
           return;
         }
-
         const file = acceptedFiles[0];
         if (!file) return;
 
         const formData = new FormData();
         formData.append("file", file);
-
         const token = await user.getIdToken();
 
         const response = await fetch("http://127.0.0.1:8000/upload", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
 
-        if (!response.ok) {
-          throw new Error("Upload failed");
-        }
+        if (!response.ok) throw new Error("Upload failed");
 
         const data = await response.json();
         console.log("Upload successful:", data);
-
-        // Navigate only after successful upload
         navigate("/documents");
       } catch (error) {
         console.error("Upload error:", error);
@@ -48,28 +41,31 @@ function UploadBox() {
     [user, navigate]
   );
 
-  const { getRootProps, getInputProps, isDragActive } =
-    useDropzone({ onDrop });
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop,
+    noClick: true,
+  });
 
   return (
-    <div>
-      <input className="upload-button" type="file" onChange={handleUpload} />
-      <div
+    <div
       {...getRootProps()}
       className={`upload-box ${isDragActive ? "drag-active" : ""}`}
-      style={{
-        backgroundColor: isDragActive ? "#e0e0e0" : "#f9f9f9",
-      }}
+
     >
       <input {...getInputProps()} />
       {isDragActive ? (
         <p>Drop the file here...</p>
       ) : (
-        <p>Drag & drop a file here, or click to select</p>
+        <p>
+          <IoCloudUploadOutline size={80} style={{color: "#EFBF04"}}/><br/>
+          Drag & drop or{" "}
+          <span onClick={open} className="select-btn">
+            click here
+          </span>{" "}
+          to select a file
+        </p>
       )}
     </div>
-    </div>
-    
   );
 }
 

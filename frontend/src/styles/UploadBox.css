@@ -1,21 +1,30 @@
 .upload-box {
-    background-image: url('../../public/assets/background.avif');
-    width: 60%;
-    filter: brightness(1.2);
-    margin: 20px auto;
-    border: 2px solid gray;
+    background-color: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    margin: 100px auto;
+    width: 40%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
     padding: 10%;
     text-align: center;
     border-radius: 10px;
+    box-shadow: 0 0 10px 4px rgba(255, 255, 255, 0.6);
+    position: relative;
+    z-index: 1;
 }
 
 .upload-box.drag-active {
     filter: brightness(1.5);
 }
 
+.select-btn {
+    color: black;
+    text-decoration: underline;
+    cursor: pointer;
+}
 
 .upload-box p {
-    font-size: 1.2em;
+    font-size: 1.5em;
     font-weight: bold;
 }
+
 

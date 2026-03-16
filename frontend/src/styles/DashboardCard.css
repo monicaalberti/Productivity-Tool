@@ -1,39 +1,51 @@
 .dashboard-card {
   background-color: rgba(255, 255, 255, 0.5);
-  /* border: 1px solid black; */
+  backdrop-filter: blur(8px);
+  color: black;
+  position: relative;
+  z-index: 3;
   border-radius: 20px;
   padding: 3%;
   margin: 1%;
-  width: 90%;
+  width: 30%;
   height: 250px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
-  flex-flow: row wrap;
-  /* text-align:center; */
-  /* justify-content: center; */
-  /* align-items: center; */
+  flex-flow: row nowrap;
   cursor: pointer;
   transition: 
     background-color 0.35s ease,
-    box-shadow 0.25s ease;
+    box-shadow 0.35s ease,
+    z-index 0.65 ease;
+  
 }
 .dashboard-card:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  /* transform: translateY(-8px) scale(1.05);
-  width: 260px; */
+  z-index: 2;
   background-color: rgba(255, 255, 255, 0.6);
 
 }
 .header-wrapper {
   display: flex;
   flex-flow: column nowrap;
-  align-items: center;
-  justify-content: left;
 
 }
 .header-wrapper h2 {
-  text-align: left;;
+  text-align: left;
 }
 .card-icon {
   margin: 5% auto;
+}
+.upload-card {
+  z-index: 1;
+}
+
+.diary-card {
+  z-index: 1;
+}
+.tasks-card {
+  z-index: 2;
+}
+.analytics-card {
+  z-index: 2;
 }

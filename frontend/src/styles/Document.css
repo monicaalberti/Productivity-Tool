@@ -1,0 +1,17 @@
+.pdf-close-button {
+    position: absolute;
+    top: 12px;
+    right: 20px;
+    cursor: pointer;
+    color: rgb(43, 43, 241);
+
+}
+.pdf-iframe {
+    position:absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+h2 {
+    text-align: center;
+}

@@ -13,6 +13,7 @@ function SidePanel({ isOpen, setIsOpen }) {
         <li><a href="/upload">Upload Document</a></li>
         <li><a href="/documents">My Documents</a></li>
         <li><a href="/analytics">My Analytics</a></li>
+        <li><a href="/kanban">My Kanban</a></li>
         <li><a href="/journal">My Journal</a></li>
         <li><a href="/login">Login</a></li>
         <li><a href="/register">Register</a></li>

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import DocumentList from "../components/DocumentList";
 import { IoIosMenu } from "react-icons/io";
 import SidePanel from "../components/SidePanel";
@@ -16,10 +16,11 @@ function Documents() {
   
   return (
     <div className="documents-container">
-      <h1><a href="/">StudyWeave - Your Documents</a></h1>
-      <IoIosMenu className="menu-icon" size={30} title="Menu" onClick={() => setIsOpen(!isOpen)} />
-      <h2>Your Uploaded Documents</h2>
-
+      <div className="docs-dashboard-background"></div>
+      <div className="header">
+        <h1><a href="/"><span className="highlight">StudyWeave</span> - Your Documents</a></h1>
+        <IoIosMenu className="menu-icon" size={40} title="Menu" onClick={() => setIsOpen(!isOpen)} />
+      </div>
       <div className="toggle-control">
         <SegmentedControl
           value={view}

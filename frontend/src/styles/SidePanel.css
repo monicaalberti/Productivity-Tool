@@ -10,6 +10,7 @@
   z-index: 1000;
   transform: translateX(100%);
   transition: transform 0.4s ease;
+  background-color: #228be6;
 }
 
 .side-panel.open {
@@ -23,13 +24,14 @@
 
 .side-panel li {
   margin: 10px 0;
-  border-bottom: 1px solid black;
+  border-bottom: 1px solid white;
   padding: 10% 0;
 }
 
 .side-panel a {
   text-decoration: none;
-  color: #333;
+  color: white;
+  /* color: #333; */
 }
 
 .close-icon {
@@ -37,4 +39,5 @@
   top: 10px;
   left: 10px;
   cursor: pointer;
+  color:white;
 }

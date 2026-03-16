@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import { IoMdClose } from "react-icons/io";
+import "../styles/Document.css";
        
 
 function Document() {
@@ -31,11 +33,15 @@ function Document() {
     }, [documentId]);
     
     return (
-        <iframe
-            src={content}
-            width="100%"
-            height="800"
-        />
+        <div className="pdf-viewer">
+            <IoMdClose className="pdf-close-button" size={40} title="Close PDF Viewer" onClick={() => window.history.back()} />
+            <iframe
+                src={content}
+                width="100%"
+                height="685"
+                className="pdf-iframe"
+            />
+        </div>
     );
 }
 export default Document;

@@ -1,34 +1,111 @@
 .docs-list {
     padding: 0;
-    margin: 0;
+    margin: 0 auto;
     display: flex;
     flex-flow: row wrap;
     align-items: center;
     justify-content: center;
+    width: 90%;
+    position: relative;
+    
 }
 .doc-item {
-    padding: 5%;
+    width: 500px;
+    height: 300px;
+    padding: 35px;
     margin: 1%;
     border: 1px solid grey;
-    border-radius: 3%;
+    border-radius: 20px;
     position: relative;
+    background-color: white;
+}
+.background {
+    background-color: whitesmoke;
+    padding: 4%;
+    border-radius: 20px;
+    height: 100%;
 }
 .topic-item {
-    padding: 5%;
+    padding: 35px;
     margin: 1%;
     border: 1px solid grey;
-    border-radius: 3%;
+    border-radius: 20px;
+    min-height: 400px;
+    width: 500px;
+    position: relative;
+    background-color: white;
+}
+.topic-item .background {
+    position: absolute;
+    
+    bottom: 5%;
+    top: 10%;
+    height: 80%;
+    width: 85%;
 
 }
-
-h2 {
-    text-align: center;
+.topic-item ul {
+    list-style-type: circle;
+    color: rgb(43, 43, 241);
+}
+.topic-item h2, .doc-item h2 {
+    text-align: left;
 }
 
 .delete-icon{
     position: absolute;
-    top: 3%;
+    top: 5%;
     right: 3%;
     cursor: pointer;
     z-index: 1000;
+}
+
+.view-link {
+    text-decoration: none;
+    color: rgb(43, 43, 241);
+    border: 1px solid rgb(43, 43, 241);
+    background-color: white;
+    padding: 2%;
+    border-radius: 20px;
+    margin-top: auto;
+    margin-bottom: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease;
+}
+.view-link:hover {
+    background-color: rgb(43, 43, 241);
+    color: white;
+}
+.viewmore-container {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.view-topic-link {
+    text-decoration: none;
+    color: rgb(43, 43, 241);
+    border: 1px solid rgb(43, 43, 241);
+    padding: 2%;
+    border-radius: 20px;
+    margin-top: auto;
+    margin-bottom: auto;
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease;
+}
+.view-topic-link:hover {
+    background-color: rgb(43, 43, 241);
+    color: white;
+}
+
+.view-doc {
+    display: flex;
+    align-items: center;
+    gap: 5px;    
 }

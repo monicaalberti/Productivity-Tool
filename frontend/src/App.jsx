@@ -8,20 +8,25 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import DocumentUpload from "./pages/DocumentUpload";
 import ProtectedRoute from "./components/ProtectedRoute";
-import VerifyAccount from "./pages/auth/VerifyAccount";
 import Documents from "./pages/Documents";
 import { AuthProvider } from "./AuthContext";
 import Document from "./pages/Document";
 import DocumentDashboard from "./pages/DocumentDashboard";
-import SummarizePage from "./pages/SummarizePage";
-import SummaryViewer from "./pages/SummaryViewer"
+import SummarizePage from "./pages/summaries/SummarizePage";
+import SummaryViewer from "./pages/summaries/SummaryViewer"
 import TopicDashboard from "./pages/TopicDashboard"
-import TopicSummarizePage from "./pages/TopicSummarizePage"
-import TopicSummaryViewer from "./pages/TopicSummaryViewer"
-import JournalPage from "./pages/JournalPage";
+import TopicSummarizePage from "./pages/summaries/TopicSummarizePage"
+import TopicSummaryViewer from "./pages/summaries/TopicSummaryViewer"
+import JournalPage from "./pages/journal/JournalPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-import MindMap from "./pages/MindMap";
-import KanbanPage from "./pages/KanbanPage";
+import MindMap from "./pages/mindmap/MindMap";
+import MindMapViewer from "./pages/mindmap/MindMapViewer";
+import KanbanPage from "./pages/kanban-pages/KanbanPage";
+import DocumentKanban from "./pages/kanban-pages/DocumentKanban";
+import TopicKanban from "./pages/kanban-pages/TopicKanban";
+import TopicMindMap from "./pages/mindmap/TopicMindMap";
+import TopicMindMapViewer from "./pages/mindmap/TopicMindMapViewer";
+import ExercisesPage from "./pages/ExercisesPage"; 
 
 function App() {
   return (
@@ -29,12 +34,9 @@ function App() {
       <Router>
         <AuthProvider>
           <Routes>
-            {/* MAIN PAGE (first page user sees) */}
             <Route path="/" element={<Dashboard />} />
-
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/verify" element={<VerifyAccount />} />
             <Route path="/upload" element={<ProtectedRoute><DocumentUpload /></ProtectedRoute>} />
             <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
             <Route path="/documents/:documentId/dashboard" element={<ProtectedRoute><DocumentDashboard /></ProtectedRoute>} />
@@ -47,7 +49,13 @@ function App() {
             <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
             <Route path="/documents/:documentId/mindmap" element={<ProtectedRoute><MindMap /></ProtectedRoute>} />
-            <Route path="/documents/:documentId/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
+            <Route path="/documents/:documentId/mindmap/view" element={<ProtectedRoute><MindMapViewer /></ProtectedRoute>} />
+            <Route path="/topics/:topicId/mindmap" element={<ProtectedRoute><TopicMindMap /></ProtectedRoute>} />
+            <Route path="/topics/:topicId/mindmap/view" element={<ProtectedRoute><TopicMindMapViewer /></ProtectedRoute>} />
+            <Route path="/documents/:documentId/kanban" element={<ProtectedRoute><DocumentKanban /></ProtectedRoute>} />
+            <Route path="/topics/:topicId/kanban" element={<ProtectedRoute><TopicKanban /></ProtectedRoute>} />
+            <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
+            <Route path="/tasks/:taskId/exercises" element={<ProtectedRoute><ExercisesPage /></ProtectedRoute>} />
           </Routes>
         </AuthProvider>
       </Router>

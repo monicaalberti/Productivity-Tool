@@ -1,5 +1,6 @@
 import React from "react";
 import { motion, useAnimation } from "framer-motion";
+import "../styles/LoadingSpinner.css";
 
 const LoadingSpinner = () => {
   const textVariants = {
@@ -9,6 +10,7 @@ const LoadingSpinner = () => {
 
   return (
     <div
+      className="spinner-wrapper"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -44,7 +46,7 @@ const LoadingSpinner = () => {
           ease: "easeInOut",
         }}
       >
-        Loading Summary...
+        Loading...
       </motion.div>
     </div>
   );

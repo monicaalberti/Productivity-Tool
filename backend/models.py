@@ -25,8 +25,10 @@ class Document(Base):
     file_path = Column(String, nullable=False)
     upload_date = Column(DateTime, default=datetime.utcnow)
     summary = Column(Text, nullable=True)
+    mindmap = Column(Text, nullable=True)
     owner = relationship("User", back_populates="documents")
-    topics = relationship("DocumentTopic", back_populates="document")
+    topics = relationship("DocumentTopic", back_populates="document") 
+    tasks = relationship("DocumentTask", back_populates="document")
 
 
 class Topic(Base):
@@ -34,13 +36,13 @@ class Topic(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.firebase_uid"))
     name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
     embedding = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
+    mindmap = Column(Text, nullable=True)
 
     owner = relationship("User", back_populates="topics")
     documents = relationship("DocumentTopic", back_populates="topic")
-    tasks = relationship("Task", back_populates="topic")
+    tasks = relationship("TopicTask", back_populates="topic")
 
 
 class DocumentTopic(Base):
@@ -58,17 +60,34 @@ class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True)
     user_id = Column(String, ForeignKey("users.firebase_uid"))
-    topic_id = Column(Integer, ForeignKey("topics.id"))
     title = Column(String, nullable=False)
     description = Column(Text)
-    priority_score = Column(Float, default=0)
-    status = Column(String, default="Backlog")  # Backlog | In Progress | Done
+    priority = Column(String, default="high")
+    status = Column(String, default="Backlog")  # Backlog | In Progress | Revising | Done
     estimated_time = Column(Float, nullable=True)
-    parent_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
 
     owner = relationship("User", back_populates="tasks")
+    documents = relationship("DocumentTask", back_populates="task")
+    topics = relationship("TopicTask", back_populates="task")
+    
+
+class DocumentTask(Base):
+    __tablename__ = "document_tasks"
+    id = Column(Integer, primary_key=True)
+    document_id = Column(Integer, ForeignKey("documents.id"))
+    task_id = Column(Integer, ForeignKey("tasks.id"))
+
+    document = relationship("Document", back_populates="tasks")
+    task = relationship("Task", back_populates="documents")
+
+class TopicTask(Base):
+    __tablename__ = "topic_tasks"
+    id = Column(Integer, primary_key=True)
+    topic_id = Column(Integer, ForeignKey("topics.id"))
+    task_id = Column(Integer, ForeignKey("tasks.id"))
+
     topic = relationship("Topic", back_populates="tasks")
-    subtasks = relationship("Task", backref="parent", remote_side=[id])
+    task = relationship("Task", back_populates="topics")
 
 
 class JournalEntry(Base):

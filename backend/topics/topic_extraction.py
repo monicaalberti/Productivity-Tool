@@ -3,7 +3,6 @@ from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 import models
 from summarization.text_extraction import extract_text_from_pdf
@@ -20,9 +19,6 @@ nltk.download('wordnet')
 nltk.download('averaged_perceptron_tagger')
 
 def get_wordnet_pos(treebank_tag):
-    """
-    Convert POS tag from nltk.pos_tag to wordnet POS for lemmatizer
-    """
     if treebank_tag.startswith('J'):
         return wordnet.ADJ
     elif treebank_tag.startswith('V'):
@@ -32,19 +28,16 @@ def get_wordnet_pos(treebank_tag):
     elif treebank_tag.startswith('R'):
         return wordnet.ADV
     else:
-        return wordnet.NOUN  # fallback to noun
+        # fallback to noun
+        return wordnet.NOUN
 
 def lemmatize_text(text):
     lemmatizer = WordNetLemmatizer()
     stop_words = set(stopwords.words('english'))
 
-    # 1️⃣ tokenize and lowercase
     tokens = [t.lower() for t in word_tokenize(text) if t.isalpha()]
 
-    # 2️⃣ POS tagging
     pos_tags = pos_tag(tokens)
-
-    # 3️⃣ Lemmatize with POS and remove stop words
     lemmatized_words = [
         lemmatizer.lemmatize(word, get_wordnet_pos(pos))
         for word, pos in pos_tags
@@ -54,17 +47,15 @@ def lemmatize_text(text):
     return lemmatized_words
 
 
-# Load model globally
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-def assign_topic(db, firebase_uid, document_id, threshold=0.60, distance_threshold=0.3):
+def assign_topic(db, firebase_uid, document_id, threshold=0.60):
     """
     Assigns a document to an existing topic based on semantic similarity.
     If no existing topic passes threshold, creates a new topic.
-    Topic name is generated via clustering all docs + TF-IDF keywords.
+    If no match is found among existing topics, a new one is created.
     """
 
-    # 1️⃣ Fetch document
     doc = db.query(models.Document).filter_by(id=document_id, user_id=firebase_uid).first()
     if not doc:
         print("Document not found.")
@@ -73,10 +64,8 @@ def assign_topic(db, firebase_uid, document_id, threshold=0.60, distance_thresho
     full_text = f"{doc.title} {extract_text_from_pdf(doc.file_path)}"
     doc_embedding = normalize(model.encode([full_text]))
 
-    # 2️⃣ Check existing topics
+    # Check existing topics
     topics = db.query(models.Topic).filter_by(user_id=firebase_uid).all()
-    # best_topic = None
-    # best_score = 0
     relevant_topics = []
 
     for topic in topics:
@@ -100,7 +89,6 @@ def assign_topic(db, firebase_uid, document_id, threshold=0.60, distance_thresho
     if relevant_topics:
 
         for topic, score in relevant_topics:
-
             # Prevent duplicate linking
             existing_link = db.query(models.DocumentTopic).filter_by(
                 document_id=doc.id,
@@ -159,36 +147,11 @@ def assign_topic(db, firebase_uid, document_id, threshold=0.60, distance_thresho
         print(f"Document assigned to {len(relevant_topics)} topic(s) and names updated.")
         return
 
-    # 4️⃣ No matching topic → create new topic via clustering all user docs
-    all_docs = db.query(models.Document).filter_by(user_id=firebase_uid).all()
-    texts = [f"{d.title} {extract_text_from_pdf(d.file_path)}" for d in all_docs]
-    embeddings = normalize(model.encode(texts))
-
-    # Agglomerative clustering on all docs
-    clustering = AgglomerativeClustering(
-        n_clusters=None,
-        distance_threshold=distance_threshold,
-        metric='cosine',
-        linkage='average'
-    )
-    labels = clustering.fit_predict(embeddings)
-
-    # Find the cluster label of the current document
-    doc_index = next(i for i, d in enumerate(all_docs) if d.id == document_id)
-    cluster_label = labels[doc_index]
-
-    # Combine all docs in this cluster to generate topic name
-    cluster_docs = [texts[i] for i, label in enumerate(labels) if label == cluster_label]
-    combined_text = " ".join(cluster_docs)
-
-    # Lemmatize with fallback
-    lemmas = lemmatize_text(combined_text)
-    print("LEMMATIZED TEXT AND YOU BETTER BE GOOD: ", lemmas)
+    # No matching topic found --> create a new topic for this document
+    lemmas = lemmatize_text(full_text)
     if not lemmas:
-        lemmas = combined_text.split()
-        print("ANOTHER ATTEMPT AT PRINTING LEMMAS: ", lemmas)
+        lemmas = full_text.split()
 
-    # Run TF-IDF
     vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_features=50)
     tfidf_matrix = vectorizer.fit_transform([" ".join(lemmas)])
     terms = vectorizer.get_feature_names_out()
@@ -200,7 +163,6 @@ def assign_topic(db, firebase_uid, document_id, threshold=0.60, distance_thresho
         top_keywords = [terms[i] for i in scores.argsort()[::-1][:2]]
         topic_name = ", ".join(top_keywords)
 
-    # 5️⃣ Create new topic
     new_topic = models.Topic(
         name=topic_name,
         user_id=firebase_uid,

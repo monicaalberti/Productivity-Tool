@@ -13,7 +13,6 @@ import firebase_admin
 from firebase_admin import auth as firebase_auth
 from fastapi.responses import FileResponse
 from summarization.text_extraction import extract_text_from_pdf
-# from summarization.summarization import chunk_text, summarize_chunk
 from topics.topic_extraction import assign_topic
 from sentiment_analysis.classify_emotions import classify_emotions
 from fastapi.responses import StreamingResponse
@@ -196,7 +195,7 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
     full_text = extract_text_from_pdf(document.file_path)
     prompt = f""" Write a detailed summary of the following document. 
     Cover all major concepts, arguments, and technical details.
-    Write in formal academic tone.
+    Write in formal academic tone. Only return the summary, add no messages or prompts.
     Document:\n\n{full_text}"""
 
     try:
@@ -210,108 +209,73 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
         return {"summary": result.stdout.strip()}
     except:
         return {"summary": "Error generating summary. Please try again."}
-#     final_response = requests.post(
-#     "http://localhost:11434/api/generate",
-#     json={
-#         "model": "gemma3:1b",
-#         "prompt": f"Create a final concise summary from this:\n\n{full_text}",
-#         "stream": True
-#     }
-# )
-
-#     return {"summary": final_response}
-
-#     summaries = []
-#     for i, c in enumerate(chunks):
-#         summaries.append(summarize_chunk(c))
-
-#     return {"summary": " ".join(summaries)}
 
 
-def chunk_list(items, batch_size):
-    for i in range(0, len(items), batch_size):
-        yield items[i:i + batch_size]
+def chunk_summaries(summaries, chunk_size=4):
+    for i in range(0, len(summaries), chunk_size):
+        yield summaries[i:i + chunk_size]
 
 @app.get("/topics/{topic_id}/summary")
 def collective_summary(topic_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
     firebase_uid = firebase_user["uid"]
-    full_text = ""
     topic = db.query(models.Topic).filter(
         models.Topic.id == topic_id,
         models.Topic.user_id == firebase_uid
     ).first()
-    document_ids = []
-    texts = []
-    for dt in topic.documents:
-        if dt.document is not None:
-            document_ids.append(dt.document.id)
-    for id in document_ids:
+
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    document_ids = [dt.document.id for dt in topic.documents if dt.document is not None]
+
+    overall_summary = ""
+
+    individual_prompt = """Write a detailed summary of the following text.
+    Cover all major concepts, arguments, and technical details.
+    Write in formal academic tone. Only return the summary, add no messages or prompts.\n\n"""
+
+    summaries = []
+    for doc_id in document_ids:
         doc = db.query(models.Document).filter(
-            models.Document.id == id,
+            models.Document.id == doc_id,
             models.Document.user_id == firebase_uid
         ).first()
-        texts.append(extract_text_from_pdf(doc.file_path))
 
-    prompt = """ Write a detailed summary of the following document. 
-    Cover all major concepts, arguments, and technical details.
-    Write in formal academic tone.
-    Document:\n\n
-    """
-    summaries = []
-    for doc in texts:
+        if doc is None:
+            continue
+
+        if doc.summary is not None:
+            summaries.append(doc.summary)
+        else:
+            try:
+                result = subprocess.run(
+                    ["ollama", "run", "gemma3:1b", individual_prompt + extract_text_from_pdf(doc.file_path)],
+                    capture_output=True, text=True, timeout=500
+                )
+                summaries.append(result.stdout.strip())
+            except Exception as e:
+                summaries.append("Error generating this summary.")
+
+    # Chunk and synthesize
+    combined = ""
+    for chunk in chunk_summaries(summaries):
+        combined = "\n\n".join(chunk)
+        synthesis_prompt = f"""You are synthesizing summaries of documents within the same topic.
+        Only return the summary, add no messages or prompts.
+        Summaries:
+        {combined}
+        """
         try:
             result = subprocess.run(
-                    ["ollama", "run", "gemma3:1b", prompt + doc],
-                    capture_output=True,
-                    text=True,
-                timeout=500  # prevent infinite freeze
-            )        
-            summaries.append(result.stdout.strip())
-        except:
-            summaries.append("Error generating this summary.")
-
-    BATCH_SIZE = 6
-    while len(summaries) > 1:
-        new_level = []
-        
-        for batch in chunk_list(summaries, BATCH_SIZE):
-            combined_text = "\n\n".join(batch)
-
-            prompt = f"""
-            You are synthesizing summaries of documents within the same topic.
-
-            Tasks:
-            1. Identify recurring themes
-            2. Extract key insights
-            3. Preserve important technical details
-            4. Produce a structured synthesis
-
-            Summaries:
-            {combined_text}
-            """
-
-            result = subprocess.run(
-                ["ollama", "run", "gemma3:1b", prompt],
-                capture_output=True,
-                text=True,
-                timeout=500
+                ["ollama", "run", "gemma3:1b", synthesis_prompt],
+                capture_output=True, text=True, timeout=500
             )
+            overall_summary += "\n\n" + result.stdout.strip()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error during synthesis: {str(e)}")
 
-            new_level.append(result.stdout.strip())
-        
-        summaries = new_level  # move up one level
+    return {"summary": overall_summary.strip()}
     
-    return {"summary": summaries[0]} 
-    # full_text = " ".join(texts)
-    # chunks = chunk_text(full_text)
-    # summaries = []
-    # for i, c in enumerate(chunks):
-        # summaries.append(summarize_chunk(c))
-
-    # return {"summary": " ".join(summaries)}
-
-
-
 
 from pydantic import BaseModel
 
@@ -516,46 +480,64 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
         raise HTTPException(status_code=404, detail="Document not found")
 
     full_text = extract_text_from_pdf(document.file_path)
-    prompt = """Generate a mindmap JSON for this document linking topics and subtopics. Return in JSON format. Here is an example of what the JSON should look like:
+    prompt = """
+    You are generating data for a React mindmap visualization.
+
+    Return ONLY valid JSON. Do NOT include explanations, markdown, or code fences.
+
+    The JSON must follow EXACTLY this structure:
+
+    {
+    "name": "Main topic of the document",
+    "children": [
         {
-        "name": "Root Topic",
+        "name": "Major topic",
         "children": [
             {
-            "name": "Subtopic 1",
-            "children": [
+            "name": "Subtopic",
+            "children": [{
+                "name": "Sub-subtopic",
+                "children": [{
+                    "name": "Further detail"                
+                }]}, 
                 {
-                "name": "Sub-subtopic 1",
-                "children": []
-                },
-                {
-                "name": "Sub-subtopic 2",
-                "children": []
-                }  
-            },
-            {
-            "name": "Subtopic 2",
-            "children": []
+                    "name": "Another sub-subtopic"
+                }]
             }
         ]
-        }    
-        The only keys should be "name" and "children". The "name" should be a concise topic or subtopic name. The "children" should be a list of subtopics that fall under that topic.
-        Document:
-        """ + full_text
+        }
+    ]
+    }
 
+    Rules:
+    - Only use the keys "name" and "children".
+    - Every node MUST be an object.
+    - "name" must be a short topic label (max 5 words).
+    - "children" must be an array of objects.
+    - The children array must NEVER contain strings.
+    - If a node has no subtopics, return "children": [].
+    - Do NOT include professor names, author names, or people as topics.
+    - Extract meaningful academic concepts only.
+    - Organize topics hierarchically from general to specific.
+    - Do not create more than 6 top-level topics.
+    - Each topic can have up to 6 children.
 
+    If your output contains anything other than JSON, it is incorrect.
+
+    Document:
+    """ + full_text
 
     try:
         result = subprocess.run(
-                ["ollama", "run", "gemma3:1b", prompt],
+                ["ollama", "run", "gemma3:4b", prompt],
                 capture_output=True,
                 text=True,
                 timeout=500
             ) 
         
         raw_output = result.stdout.strip()
-        # print("Raw output from model:", raw_output)  # Debugging line
         cleaned = re.sub(r"```json|```", "", raw_output).strip()
-        print("Cleaned output from model:", cleaned)  # Debugging line
+        print("Cleaned output from model:", cleaned)
         try:
             mindmap_json = json.loads(cleaned)
         except json.JSONDecodeError:
@@ -563,6 +545,645 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
 
         return {"mindmap": mindmap_json}       
 
-        # return {"mindmap": result.stdout.strip()}
     except:
         return {"mindmap": "Error generating mindmap. Please try again."}
+    
+
+@app.put("/documents/{document_id}/mindmap")
+def save_mindmap(
+    document_id: int,
+    mindmap: dict,
+    firebase_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    firebase_uid = firebase_user["uid"]
+
+    document = db.query(models.Document).filter(
+        models.Document.id == document_id,
+        models.Document.user_id == firebase_uid
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    document.mindmap = json.dumps(mindmap)
+    db.commit()
+    db.refresh(document)
+
+    return {"message": "Mindmap saved"}
+
+
+# @app.get("/topics/{topic_id}/mindmap")
+# def generate_mindmap(topic_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+#     firebase_uid = firebase_user["uid"]
+
+#     topic = db.query(models.Topic).filter(
+#         models.Topic.id == topic_id,
+#         models.Topic.user_id == firebase_uid
+#     ).first()
+#     if not topic:
+#         raise HTTPException(status_code=404, detail="Topic not found")
+
+#     document_paths = [
+#         dt.document.file_path
+#         for dt in topic.documents
+#         if dt.document is not None
+#     ]
+
+#     if not document_paths:
+#         raise HTTPException(status_code=404, detail="No documents found for this topic")
+    
+#     mindmaps = []
+
+#     for path in document_paths:
+#         prompt = """
+#             You are generating data for a React mindmap visualization.
+
+#             Return ONLY valid JSON. Do NOT include explanations, markdown, or code fences.
+
+#             The JSON must follow EXACTLY this structure:
+
+#             {
+#             "name": "Main topic of the document",
+#             "children": [
+#                 {
+#                 "name": "Major topic",
+#                 "children": [
+#                     {
+#                     "name": "Subtopic",
+#                     "children": [{
+#                         "name": "Sub-subtopic",
+#                         "children": [{
+#                             "name": "Further detail"                
+#                         }]}, 
+#                         {
+#                             "name": "Another sub-subtopic"
+#                         }]
+#                     }
+#                 ]
+#                 }
+#             ]
+#             }
+
+#             Rules:
+#             - Only use the keys "name" and "children".
+#             - Every node MUST be an object.
+#             - "name" must be a short topic label (max 5 words).
+#             - "children" must be an array of objects.
+#             - The children array must NEVER contain strings.
+#             - If a node has no subtopics, return "children": [].
+#             - Do NOT include professor names, author names, or people as topics.
+#             - Extract meaningful academic concepts only.
+#             - Organize topics hierarchically from general to specific.
+#             - Do not create more than 6 top-level topics.
+#             - Each topic can have up to 6 children.
+
+#             If your output contains anything other than JSON, it is incorrect.
+
+#             Document:
+#         """ + extract_text_from_pdf(path)
+
+#         try:
+#             result = subprocess.run(
+#                 ["ollama", "run", "gemma3:4b", prompt],
+#                 capture_output=True,
+#                 text=True,
+#                 timeout=500
+#             )
+
+#             raw_output = result.stdout.strip()
+#             cleaned = re.sub(r"```json|```", "", raw_output).strip()            
+#             mindmaps.append(cleaned)
+
+#         except Exception as e:
+#             print("Error generating mindmap for doc:", e)
+#             continue
+#     # Combine chunk mindmaps into one (simple approach: attach all as children of root)
+#     prompt2 = """
+#         You are merging multiple mindmap JSONs into one unified mindmap. Retun ONLY valid JSON. Do NOT include explanations, markdown, or code fences.
+#         Each input JSON follows this structure:
+#         {
+#         "name": "Main topic",
+#         "children": [
+#             {
+#             "name": "Subtopic",
+#             "children": []
+#             }
+#         ]
+#         }
+
+#     """ + str(mindmaps)
+    
+#     final_mindmap = subprocess.run(
+#         ["ollama", "run", "gemma3:4b", prompt2],
+#         capture_output=True,
+#         text=True,
+#         timeout=500
+#     )
+
+#     final_mindmap_cleaned = re.sub(r"```json|```", "", final_mindmap.stdout.strip()).strip()
+
+#     return {"mindmap": final_mindmap_cleaned}
+def run_ollama_with_retry(prompt, model="gemma3:4b", retries=3, timeout=500):
+    for attempt in range(retries):
+        result = subprocess.run(
+            ["ollama", "run", model, prompt],
+            capture_output=True, text=True, timeout=timeout
+        )
+        raw = result.stdout.strip()
+        cleaned = re.sub(r"```json|```", "", raw).strip()
+        try:
+            parsed = json.loads(cleaned)
+            return parsed
+        except json.JSONDecodeError:
+            print(f"Attempt {attempt+1}: Invalid JSON, retrying...")
+    return None
+
+@app.get("/topics/{topic_id}/mindmap")
+def generate_mindmap(topic_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+    topic = db.query(models.Topic).filter(
+        models.Topic.id == topic_id,
+        models.Topic.user_id == firebase_uid
+    ).first()
+
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    documents = [dt.document for dt in topic.documents if dt.document is not None]
+
+    if not documents:
+        raise HTTPException(status_code=404, detail="No documents found for this topic")
+
+    mindmap_prompt = lambda text: """
+        You are generating data for a React mindmap visualization.
+        Return ONLY valid JSON. Do NOT include explanations, markdown, or code fences.
+        The JSON must follow EXACTLY this structure:
+        {
+            "name": "Main topic of the document",
+            "children": [
+                {
+                    "name": "Major topic",
+                    "children": [
+                        { "name": "Subtopic", "children": [] }
+                    ]
+                }
+            ]
+        }
+        Rules:
+        - Only use the keys "name" and "children".
+        - "name" must be a short topic label (max 5 words).
+        - "children" must be an array of objects, never strings.
+        - If a node has no subtopics, return "children": [].
+        - Do NOT include professor names, author names, or people as topics.
+        - Extract meaningful academic concepts only.
+        - Organize topics hierarchically from general to specific.
+        - Do not create more than 6 top-level topics.
+        - Each topic can have up to 6 children.
+        If your output contains anything other than JSON, it is incorrect.
+        Document:
+    """ + text
+
+    children = []
+    for doc in documents:
+        # Check if mindmap already exists
+        if doc.mindmap is not None:
+            try:
+                parsed = json.loads(doc.mindmap)
+                children.append(parsed)
+                continue
+            except json.JSONDecodeError:
+                pass
+
+        # Generate from scratch
+        parsed = run_ollama_with_retry(mindmap_prompt(extract_text_from_pdf(doc.file_path)))
+        if parsed:
+            children.append(parsed)
+        else:
+            print(f"Failed to generate mindmap for doc {doc.id} after retries")
+
+    if not children:
+        raise HTTPException(status_code=500, detail="Could not generate any mindmaps")
+
+    # Build final structure in Python, no LLM needed for merging
+    final_mindmap = {
+        "name": topic.name,
+        "children": children
+    }
+
+    return {"mindmap": final_mindmap}
+
+@app.put("/topics/{topic_id}/mindmap")
+def save_mindmap(
+    topic_id: int,
+    mindmap: dict,
+    firebase_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    firebase_uid = firebase_user["uid"]
+
+    topic = db.query(models.Topic).filter(
+        models.Topic.id == topic_id,
+        models.Topic.user_id == firebase_uid
+    ).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    topic.mindmap = json.dumps(mindmap)
+    db.commit()
+    db.refresh(topic)
+
+    return {"message": "Mindmap saved"}
+
+
+@app.post('/document/{document_id}/tasks')
+def get_tasks(document_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+
+    document = db.query(models.Document).filter(
+        models.Document.id == document_id,
+        models.Document.user_id == firebase_uid
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    existing_tasks = db.query(models.DocumentTask).filter_by(document_id=document_id).all()
+    if existing_tasks:
+        # If tasks already exist, return them
+        tasks_list = []
+        for dt in existing_tasks:
+            task = db.query(models.Task).filter(models.Task.id == dt.task_id).first()
+            if task:
+                tasks_list.append({
+                    "id": task.id,
+                    "title": task.title,
+                    "description": task.description,
+                    "priority": task.priority,
+                    "status": task.status,
+                    "estimated_time": task.estimated_time
+                })
+        return {"BACKLOG": [t for t in tasks_list if t["status"] == "BACKLOG"],
+            "IN PROGRESS": [t for t in tasks_list if t["status"] == "IN PROGRESS"],
+            "REVISING": [t for t in tasks_list if t["status"] == "REVISING"],
+            "DONE": [t for t in tasks_list if t["status"] == "DONE"],}
+    
+    prompt = """
+        Generate a list of actionable study tasks based on this document that a user could follow to prepare for an exam. 
+        Each task should have the following fields:
+        - title: short descriptive name of the task
+        - description: detailed explanation of what to do
+        - priority: high, medium, or low
+        - estimated_time: time to complete in minutes
+        - status: initialize all of them to BACKLOG
+
+        Return ONLY valid JSON in the following format:
+        [
+            {
+                "title": "...",
+                "description": "...",
+                "priority": "...",
+                "estimated_time": ...
+                "status": "BACKLOG"
+            }, {
+                "title": "...",
+                "description": "...",
+                "priority": "...",
+                "estimated_time": ...
+                "status": "BACKLOG"
+            }
+        ]
+        """ + extract_text_from_pdf(document.file_path)
+    
+    try:
+        result = subprocess.run(
+                ["ollama", "run", "gemma3:4b", prompt],
+                capture_output=True,
+                text=True,
+                timeout=500
+            )
+
+        raw_output = result.stdout.strip()
+        cleaned = re.sub(r"```json|```", "", raw_output).strip()
+        tasks_json = json.loads(cleaned)
+        print(tasks_json)
+    
+        topic_ids = [dt.topic_id for dt in document.topics]
+        saved = []
+        for t in tasks_json:
+            task_obj = models.Task(
+                user_id=firebase_uid,
+                title=t["title"],
+                description=t["description"],
+                priority=t["priority"],
+                estimated_time=t["estimated_time"],
+                status=t["status"]
+            )
+            db.add(task_obj)
+            db.flush()
+
+            db.add(models.DocumentTask(document_id=document_id, task_id=task_obj.id))
+            for topic_id in topic_ids:
+                db.add(models.TopicTask(topic_id=topic_id, task_id=task_obj.id))
+
+            saved.append(task_obj)
+
+            db.commit()
+            print(f"Committed {len(saved)} tasks")
+
+        return {
+            "BACKLOG": [t for t in tasks_json if t["status"] == "BACKLOG"],
+            "IN PROGRESS": [t for t in tasks_json if t["status"] == "IN PROGRESS"],
+            "REVISING": [t for t in tasks_json if t["status"] == "REVISING"],
+            "DONE": [t for t in tasks_json if t["status"] == "DONE"],
+        }
+            
+
+    except Exception as e:
+        return {"tasks": [], "error": str(e)}
+    
+
+class UpdateTaskBody(BaseModel):
+    status: str | None = None
+    title: str | None = None
+    description: str | None = None
+    estimated_time: float | None = None
+    priority: str | None = None
+
+@app.patch("/tasks/{task_id}")
+def update_task(
+    task_id: int,
+    body: UpdateTaskBody,
+    firebase_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    firebase_uid = firebase_user["uid"]
+
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id,
+        models.Task.user_id == firebase_uid
+    ).first()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if body.status is not None: task.status = body.status
+    if body.title is not None: task.title = body.title
+    if body.description is not None: task.description = body.description
+    if body.estimated_time is not None: task.estimated_time = body.estimated_time
+    if body.priority is not None: task.priority = body.priority
+
+    db.commit()
+    return {"message": "Task updated", "task_id": task_id}
+
+
+@app.post('/topic/{topic_id}/tasks')
+def get_tasks(topic_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+
+    topic = db.query(models.Topic).filter(
+        models.Topic.id == topic_id,
+        models.Topic.user_id == firebase_uid
+    ).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    
+    all_topic_tasks = {
+        "BACKLOG": [],
+        "IN PROGRESS": [],
+        "REVISING": [],
+        "DONE": [],
+    }
+    docs = [dt.document_id for dt in topic.documents]
+    for doc_id in docs:
+        existing_tasks = db.query(models.DocumentTask).filter_by(document_id=doc_id).all()
+        if existing_tasks:
+            for dt in existing_tasks:
+                task = db.query(models.Task).filter(models.Task.id == dt.task_id).first()
+                if task.status == "BACKLOG":
+                    all_topic_tasks["BACKLOG"].append({
+                        "id": task.id,
+                        "title": task.title,
+                        "description": task.description,
+                        "priority": task.priority,
+                        "status": task.status,
+                        "estimated_time": task.estimated_time
+                    })
+                elif task.status =="IN PROGRESS":
+                    all_topic_tasks["IN PROGRESS"].append({
+                        "id": task.id,
+                        "title": task.title,
+                        "description": task.description,
+                        "priority": task.priority,
+                        "status": task.status,
+                        "estimated_time": task.estimated_time
+                    })
+                elif task.status == "REVISING":
+                    all_topic_tasks["REVISING"].append({
+                        "id": task.id,
+                        "title": task.title,
+                        "description": task.description,
+                        "priority": task.priority,
+                        "status": task.status,
+                        "estimated_time": task.estimated_time
+                    })
+                else:
+                    all_topic_tasks["DONE"].append({
+                        "id": task.id,
+                        "title": task.title,
+                        "description": task.description,
+                        "priority": task.priority,
+                        "status": task.status,
+                        "estimated_time": task.estimated_time
+                    })
+
+        else:
+            prompt = """
+                Generate a list of actionable study tasks based on this document that a user could follow to prepare for an exam. 
+                Each task should have the following fields:
+                - title: short descriptive name of the task
+                - description: detailed explanation of what to do
+                - priority: high, medium, or low
+                - estimated_time: time to complete in minutes
+                - status: initialize all of them to BACKLOG
+
+                Return ONLY valid JSON in the following format:
+                [
+                    {
+                        "title": "...",
+                        "description": "...",
+                        "priority": "...",
+                        "estimated_time": ...
+                        "status": "BACKLOG"
+                    }, {
+                        "title": "...",
+                        "description": "...",
+                        "priority": "...",
+                        "estimated_time": ...
+                        "status": "BACKLOG"
+                    }
+                ]
+                """
+
+            document = db.query(models.Document).filter(
+                models.Document.id == doc_id,
+                models.Document.user_id == firebase_uid
+            ).first()
+            if not document:
+                raise HTTPException(status_code=404, detail="Document not found")
+    
+            try:
+                result = subprocess.run(
+                        ["ollama", "run", "gemma3:4b", prompt + extract_text_from_pdf(document.file_path)],
+                        capture_output=True,
+                        text=True,
+                        timeout=500
+                    )
+
+                raw_output = result.stdout.strip()
+                cleaned = re.sub(r"```json|```", "", raw_output).strip()
+                tasks_json = json.loads(cleaned)
+                for t in tasks_json:
+                    all_topic_tasks["BACKLOG"].append({
+                        "id": task.id,
+                        "title": task.title,
+                        "description": task.description,
+                        "priority": task.priority,
+                        "status": task.status,
+                        "estimated_time": task.estimated_time
+                    })
+            
+                topic_ids = [dt.topic_id for dt in document.topics]
+                saved = []
+                for t in tasks_json:
+                    task_obj = models.Task(
+                        user_id=firebase_uid,
+                        title=t["title"],
+                        description=t["description"],
+                        priority=t["priority"],
+                        estimated_time=t["estimated_time"],
+                        status=t["status"]
+                    )
+                    db.add(task_obj)
+                    db.flush()
+
+                    db.add(models.DocumentTask(document_id=doc_id, task_id=task_obj.id))
+                    for topic_id in topic_ids:
+                        db.add(models.TopicTask(topic_id=topic_id, task_id=task_obj.id))
+
+                    saved.append(task_obj)
+
+                    db.commit()
+                    print(f"Committed {len(saved)} tasks")
+
+                return all_topic_tasks
+                
+            except Exception as e:
+                return {"tasks": [], "error": str(e)}
+    
+
+@app.get("/tasks")
+def get_all_tasks(firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    firebase_uid = firebase_user["uid"]
+
+    tasks = db.query(models.Task).filter(models.Task.user_id == firebase_uid).all()
+
+    kanban = {
+        "BACKLOG": [],
+        "IN PROGRESS": [],
+        "REVISING": [],
+        "DONE": []
+    }
+    for t in tasks:
+        if t.status == "BACKLOG":
+            kanban["BACKLOG"].append({
+                "id": t.id,
+                "title": t.title,
+                "description": t.description,
+                "priority": t.priority,
+                "status": t.status,
+                "estimated_time": t.estimated_time
+            })
+        elif t.status =="IN PROGRESS":
+            kanban["IN PROGRESS"].append({
+                "id": t.id,
+                "title": t.title,
+                "description": t.description,
+                "priority": t.priority,
+                "status": t.status,
+                "estimated_time": t.estimated_time
+            })
+        elif t.status == "REVISING":
+            kanban["REVISING"].append({
+                "id": t.id,
+                "title": t.title,
+                "description": t.description,
+                "priority": t.priority,
+                "status": t.status,
+                "estimated_time": t.estimated_time
+            })
+        else:
+            kanban["DONE"].append({
+                "id": t.id,
+                "title": t.title,
+                "description": t.description,
+                "priority": t.priority,
+                "status": t.status,
+                "estimated_time": t.estimated_time
+            })
+
+    return {"kanban": kanban}
+
+
+
+@app.get("/tasks/{task_id}/exercises") 
+def generate_exercises(task_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    
+    firebase_uid = firebase_user["uid"]
+
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id,
+        models.Task.user_id == firebase_uid
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    prompt = """
+        Generate 10 exercises to test knowledge on the following task and return it in JSON format with question and solution
+        as separate fields of the JSON object.
+    """ + task.title + task.description
+
+    try:
+        result = subprocess.run(
+            ["ollama", "run", "gemma3:4b", prompt],
+            capture_output=True,
+            text=True,
+            timeout=500
+        )
+        raw_output = result.stdout.strip()
+        cleaned = re.sub(r"```json|```", "", raw_output).strip()
+        exercises_json = json.loads(cleaned)
+    except Exception as e:
+        exercises_json = []
+        print(f"Error generating exercises for task {task.id}: {e}")
+
+    return {"exercises": exercises_json}
+
+
+from collections import defaultdict
+@app.get("/tasks/analytics")
+def get_analytics(firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    user_id = firebase_user['uid']
+    
+    # Pie chart (tasks grouped by status)
+    all_tasks = db.query(models.Task)\
+        .filter(models.Task.user_id == user_id)\
+        .all()
+
+    status_counts = defaultdict(int)
+    for task in all_tasks:
+        status_counts[task.status] += 1
+
+    status_data = [{"status": s, "count": c} for s, c in status_counts.items()]
+
+    return {
+        "status_breakdown": status_data
+    }

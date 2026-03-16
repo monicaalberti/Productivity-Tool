@@ -1,14 +1,73 @@
-.doc-item {
-    width: 40%;
+.topic-dashboard-box {
+    display: flex;
+    flex-flow: column nowrap;
+    gap: 0;
 }
-.dashboard-item {
-    width: 90%;
+.topic-services-container {
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    width: 80%;
+    z-index: 2;
     margin: 0 auto;
+    margin-bottom: 20px;
+    padding: 2%;
 }
-.topic-list {
+.topic-services-container > h2 {
+    margin-bottom: 0px;
+}
+.topic-services {
+    margin-top: 0px;
+}
+
+.view-link {
+    align-items: center;
+    justify-content: center;
+}
+
+.topics-container {
     display: flex;
     flex-flow: row wrap;
     align-items: center;
     justify-content:center;
+    gap: 5%;
+    margin: 5% auto;
+}
 
+.doc {
+    width: 400px;
+    padding: 35px;
+    border: 1px solid grey;
+    border-radius: 20px;
+    background-color: white;
+}
+.dashboard-box .button-wrapper {
+    display: flex;
+    flex-flow: column nowrap;
+    gap: 5%;
+    justify-content: center;
+}
+.topic-dashboard-item {
+    width: 500px;
+    margin: 5% auto;
+    border: 1px solid grey;
+    padding: 3%;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+.topic-services {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+}
+.topics-dashboard-background {
+    position: fixed;
+    top: 40px;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("../../public/assets/tentative-bg.jpg");
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
 }

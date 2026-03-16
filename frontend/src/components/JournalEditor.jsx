@@ -20,7 +20,7 @@ function JournalEditor({ content, setContent }) {
 
   return (
     <div className="journal-editor">
-      <div style={{ marginBottom: "8px" }}>
+      <div className="editor-palette" style={{ marginBottom: "8px" }}>
         <button onClick={() => editor.chain().focus().toggleBold().run()}><b>B</b></button>
         <button onClick={() => editor.chain().focus().toggleItalic().run()}><i>I</i></button>
         <button onClick={() => editor.chain().focus().toggleStrike().run()}>S</button>
@@ -31,7 +31,7 @@ function JournalEditor({ content, setContent }) {
         style={{
           border: "1px solid #ccc",
           borderRadius: "8px",
-          minHeight: "250px",
+          height: "100%",
           padding: "12px",
         }}
       >

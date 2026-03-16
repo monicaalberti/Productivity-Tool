@@ -2,3 +2,11 @@
     display: block;
     margin: 20px auto;
 }
+.upload-container{
+    height: 100vh;
+    background-image: url("../../public/assets/doc-dash-bg.png");
+    background-color: black;
+    z-index: 0;
+    background-size: cover;
+    
+}
