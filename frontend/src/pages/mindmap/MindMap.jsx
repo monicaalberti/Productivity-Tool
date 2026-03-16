@@ -37,16 +37,44 @@ function MindMap() {
             console.error("Error saving mindmap:", err);
         }
     };
+    
+    const handleDownload = () => {
+        const svg = treeContainerRef.current?.querySelector('svg');
+        if (!svg) return;
 
-    const handleDownload = async () => {
-        const canvas = await html2canvas(treeContainerRef.current);
-        const dataUrl = canvas.toDataURL('image/png');
+        const bbox = svg.getBBox();
+        const padding = 40;
+
+        const cloned = svg.cloneNode(true);
+
+        cloned.setAttribute('width', bbox.width + padding * 2);
+        cloned.setAttribute('height', bbox.height + padding * 2);
+        cloned.setAttribute(
+            'viewBox',
+            `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`
+        );
+
+        const serializer = new XMLSerializer();
+        let source = serializer.serializeToString(cloned);
+
+        if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+            source = source.replace(
+                /^<svg/,
+                '<svg xmlns="http://www.w3.org/2000/svg"'
+            );
+        }
+
+        const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(source);
+
         const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = 'mindmap.png';
-        link.click();
-    };
+        link.href = url;
+        link.download = 'mindmap.svg';
 
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
     useEffect(() => {
         const fetchMindMapData = async () => {
             const token = await user.getIdToken();
