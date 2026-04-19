@@ -40,7 +40,7 @@ h1 {
 }
 
 /* shared layer styles */
-.bg-layer {
+/* .bg-layer {
   position: fixed;
   top: 0;
   left: 0;
@@ -51,7 +51,7 @@ h1 {
   pointer-events: none;
 }
 
-/* back layer */
+back layer
 .bg-back {
   background-image: url("../../public/assets/desk.png");
   transform: scale(0.8);
@@ -78,7 +78,20 @@ h1 {
     background-position: 80% 40%, center;
     position: absolute;
     z-index: 2;
+} */
+.bg-layer-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("../../public/assets/doc-dash-bg.png");
+    background-size: cover, 750px auto, 285px auto;
+    background-position: center, 35% -60%, 80% 40%;
+    background-repeat: no-repeat;
+    z-index: 1;
 }
+
 
 .top-row {
     display: flex;

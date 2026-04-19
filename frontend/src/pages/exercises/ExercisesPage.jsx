@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import SidePanel from "../components/SidePanel";
-import LoadingSpinner from "../components/LoadingSpinner";
+import SidePanel from "../../components/SidePanel";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { GrNext } from "react-icons/gr";
 import { IoIosMenu } from "react-icons/io";
-import { useAuth } from '../AuthContext';
-import "../styles/ExercisesPage.css";
+import { useAuth } from '../../AuthContext';
+import "../../styles/ExercisesPage.css";
 
 
 function ExercisesPage() {

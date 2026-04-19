@@ -5,20 +5,20 @@ import './styles/App.css';
 import { MantineProvider } from '@mantine/core';
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import Dashboard from "./pages/Dashboard";
-import DocumentUpload from "./pages/DocumentUpload";
+import Dashboard from "./pages/dashboards/Dashboard";
+import DocumentUpload from "./pages/docs/DocumentUpload";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Documents from "./pages/Documents";
+import Documents from "./pages/docs/Documents";
 import { AuthProvider } from "./AuthContext";
-import Document from "./pages/Document";
-import DocumentDashboard from "./pages/DocumentDashboard";
+import Document from "./pages/docs/Document";
+import DocumentDashboard from "./pages/dashboards/DocumentDashboard";
 import SummarizePage from "./pages/summaries/SummarizePage";
 import SummaryViewer from "./pages/summaries/SummaryViewer"
-import TopicDashboard from "./pages/TopicDashboard"
+import TopicDashboard from "./pages/dashboards/TopicDashboard"
 import TopicSummarizePage from "./pages/summaries/TopicSummarizePage"
 import TopicSummaryViewer from "./pages/summaries/TopicSummaryViewer"
 import JournalPage from "./pages/journal/JournalPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
+import AnalyticsPage from "./pages/analytics/AnalyticsPage";
 import MindMap from "./pages/mindmap/MindMap";
 import MindMapViewer from "./pages/mindmap/MindMapViewer";
 import KanbanPage from "./pages/kanban-pages/KanbanPage";
@@ -26,7 +26,7 @@ import DocumentKanban from "./pages/kanban-pages/DocumentKanban";
 import TopicKanban from "./pages/kanban-pages/TopicKanban";
 import TopicMindMap from "./pages/mindmap/TopicMindMap";
 import TopicMindMapViewer from "./pages/mindmap/TopicMindMapViewer";
-import ExercisesPage from "./pages/ExercisesPage"; 
+import ExercisesPage from "./pages/exercises/ExercisesPage"; 
 
 function App() {
   return (

@@ -1,6 +1,7 @@
 import React from "react";
 import "../styles/SidePanel.css";
 import { IoMdClose } from "react-icons/io";
+import { Link } from "react-router-dom";
 
 
 function SidePanel({ isOpen, setIsOpen }) {
@@ -9,14 +10,14 @@ function SidePanel({ isOpen, setIsOpen }) {
         <IoMdClose className="close-icon" size={30} title="Close" onClick={() => setIsOpen(false)} />
 
         <ul>
-        <li><a href="/">Dashboard</a></li>
-        <li><a href="/upload">Upload Document</a></li>
-        <li><a href="/documents">My Documents</a></li>
-        <li><a href="/analytics">My Analytics</a></li>
-        <li><a href="/kanban">My Kanban</a></li>
-        <li><a href="/journal">My Journal</a></li>
-        <li><a href="/login">Login</a></li>
-        <li><a href="/register">Register</a></li>
+          <li><Link to="/">Dashboard</Link></li>
+          <li><Link to="/upload">Upload Document</Link></li>
+          <li><Link to="/documents">My Documents</Link></li>
+          <li><Link to="/analytics">My Analytics</Link></li>
+          <li><Link to="/kanban">My Kanban</Link></li>
+          <li><Link to="/journal">My Journal</Link></li>
+          <li><Link to="/login">Login</Link></li>
+          <li><Link to="/register">Register</Link></li>
         </ul>
     </div>
 );

@@ -56,7 +56,7 @@ def firebase_login(
         db.commit()
         db.refresh(user)
 
-    return {"message": "User synced", "user_id": user.id}
+    return {"message": "User synced", "user_id": user.firebase_uid}
 
 # add CORS middleware to allow requests from the React frontend
 app.add_middleware(
@@ -150,10 +150,10 @@ def get_document(
 @app.delete("/documents/{document_id}")
 def delete_doc(
     document_id: int, 
-    direbase_user=Depends(get_current_user),
+    firebase_user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    firebase_uid = direbase_user["uid"]
+    firebase_uid = firebase_user["uid"]
     document = db.query(models.Document).filter(
         models.Document.id == document_id,
         models.Document.user_id == firebase_uid
@@ -198,12 +198,13 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
     Write in formal academic tone. Only return the summary, add no messages or prompts.
     Document:\n\n{full_text}"""
 
+    # Ollama call
     try:
         result = subprocess.run(
                 ["ollama", "run", "gemma3:1b", prompt],
                 capture_output=True,
                 text=True,
-                timeout=500  # prevent infinite freeze
+                timeout=500  #timeout
             )        
 
         return {"summary": result.stdout.strip()}
@@ -226,6 +227,7 @@ def collective_summary(topic_id: int, firebase_user=Depends(get_current_user), d
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
 
+    # Get all documents for this topic
     document_ids = [dt.document.id for dt in topic.documents if dt.document is not None]
 
     overall_summary = ""
@@ -277,6 +279,7 @@ def collective_summary(topic_id: int, firebase_user=Depends(get_current_user), d
     return {"summary": overall_summary.strip()}
     
 
+# Save summaries (document and topic) to DB for later retrieval and PDF download
 from pydantic import BaseModel
 
 class SummarySaveRequest(BaseModel):
@@ -326,6 +329,7 @@ def save_summary(
 
     return {"message": "Summary saved"}
 
+# pdf download
 @app.get("/documents/{document_id}/summary/download")
 async def download_summary_pdf(document_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
     firebase_uid = firebase_user["uid"]
@@ -412,7 +416,6 @@ def get_entries(firebase_user=Depends(get_current_user), db: Session = Depends(g
     return {"entries": entries}
 
 
-
 class EntryContentModel(BaseModel):
     content: str
 
@@ -420,17 +423,19 @@ class EntryContentModel(BaseModel):
 def save_entry(entry: EntryContentModel, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
     user_id = firebase_user['uid']
 
+    # emotion classification for sentiment polarity
     positive_emotions = ["admiration", "amusement", "approval", "caring", "excitement", "gratitude", "joy", "love", "optimism", "pride", "realization", "relief"]
     negative_emotions = ["anger", "annoyance", "confusion", "curiosity", "desire", "disappointment", "disapproval", "disgust", "embarrassment", "fear", "grief", "nervousness", "remorse", "sadness", "surprise"]
 
+    # TOP EMOTION + SENTIMENT SCORE
     analysis = classify_emotions(entry.content)
     top_emotion = analysis["top_emotion"]
     sentiment_score = analysis["sentiment_score"]
 
+    # SENTIMENT POLARITY CALCULATION (POSITIVE - NEGATIVE)
     all_emotions = analysis["all_emotions"]
     positive_score = sum(all_emotions[e] for e in positive_emotions if e in all_emotions)
     negative_score = sum(all_emotions[e] for e in negative_emotions if e in all_emotions)
-
     sentiment_polarity = positive_score - negative_score
 
     new_entry = models.JournalEntry(
@@ -448,23 +453,6 @@ def save_entry(entry: EntryContentModel, firebase_user=Depends(get_current_user)
     return new_entry
 
 
-@app.get("/sentiment/analytics")
-def get_analytics(firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    user_id = firebase_user['uid']
-    entries = db.query(models.JournalEntry)\
-        .filter(models.JournalEntry.user_id == user_id)\
-        .order_by(models.JournalEntry.created_at.asc())\
-        .all()
-
-    data = [
-        {
-            "date": entry.created_at.strftime("%Y-%m-%d"),
-            "sentiment_polarity": entry.sentiment_polarity
-        }
-        for entry in entries
-    ]
-
-    return data
 
 import json
 import re
@@ -537,7 +525,6 @@ def summarize_pdf(document_id: int, firebase_user=Depends(get_current_user), db:
         
         raw_output = result.stdout.strip()
         cleaned = re.sub(r"```json|```", "", raw_output).strip()
-        print("Cleaned output from model:", cleaned)
         try:
             mindmap_json = json.loads(cleaned)
         except json.JSONDecodeError:
@@ -571,118 +558,6 @@ def save_mindmap(
 
     return {"message": "Mindmap saved"}
 
-
-# @app.get("/topics/{topic_id}/mindmap")
-# def generate_mindmap(topic_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
-#     firebase_uid = firebase_user["uid"]
-
-#     topic = db.query(models.Topic).filter(
-#         models.Topic.id == topic_id,
-#         models.Topic.user_id == firebase_uid
-#     ).first()
-#     if not topic:
-#         raise HTTPException(status_code=404, detail="Topic not found")
-
-#     document_paths = [
-#         dt.document.file_path
-#         for dt in topic.documents
-#         if dt.document is not None
-#     ]
-
-#     if not document_paths:
-#         raise HTTPException(status_code=404, detail="No documents found for this topic")
-    
-#     mindmaps = []
-
-#     for path in document_paths:
-#         prompt = """
-#             You are generating data for a React mindmap visualization.
-
-#             Return ONLY valid JSON. Do NOT include explanations, markdown, or code fences.
-
-#             The JSON must follow EXACTLY this structure:
-
-#             {
-#             "name": "Main topic of the document",
-#             "children": [
-#                 {
-#                 "name": "Major topic",
-#                 "children": [
-#                     {
-#                     "name": "Subtopic",
-#                     "children": [{
-#                         "name": "Sub-subtopic",
-#                         "children": [{
-#                             "name": "Further detail"                
-#                         }]}, 
-#                         {
-#                             "name": "Another sub-subtopic"
-#                         }]
-#                     }
-#                 ]
-#                 }
-#             ]
-#             }
-
-#             Rules:
-#             - Only use the keys "name" and "children".
-#             - Every node MUST be an object.
-#             - "name" must be a short topic label (max 5 words).
-#             - "children" must be an array of objects.
-#             - The children array must NEVER contain strings.
-#             - If a node has no subtopics, return "children": [].
-#             - Do NOT include professor names, author names, or people as topics.
-#             - Extract meaningful academic concepts only.
-#             - Organize topics hierarchically from general to specific.
-#             - Do not create more than 6 top-level topics.
-#             - Each topic can have up to 6 children.
-
-#             If your output contains anything other than JSON, it is incorrect.
-
-#             Document:
-#         """ + extract_text_from_pdf(path)
-
-#         try:
-#             result = subprocess.run(
-#                 ["ollama", "run", "gemma3:4b", prompt],
-#                 capture_output=True,
-#                 text=True,
-#                 timeout=500
-#             )
-
-#             raw_output = result.stdout.strip()
-#             cleaned = re.sub(r"```json|```", "", raw_output).strip()            
-#             mindmaps.append(cleaned)
-
-#         except Exception as e:
-#             print("Error generating mindmap for doc:", e)
-#             continue
-#     # Combine chunk mindmaps into one (simple approach: attach all as children of root)
-#     prompt2 = """
-#         You are merging multiple mindmap JSONs into one unified mindmap. Retun ONLY valid JSON. Do NOT include explanations, markdown, or code fences.
-#         Each input JSON follows this structure:
-#         {
-#         "name": "Main topic",
-#         "children": [
-#             {
-#             "name": "Subtopic",
-#             "children": []
-#             }
-#         ]
-#         }
-
-#     """ + str(mindmaps)
-    
-#     final_mindmap = subprocess.run(
-#         ["ollama", "run", "gemma3:4b", prompt2],
-#         capture_output=True,
-#         text=True,
-#         timeout=500
-#     )
-
-#     final_mindmap_cleaned = re.sub(r"```json|```", "", final_mindmap.stdout.strip()).strip()
-
-#     return {"mindmap": final_mindmap_cleaned}
 def run_ollama_with_retry(prompt, model="gemma3:4b", retries=3, timeout=500):
     for attempt in range(retries):
         result = subprocess.run(
@@ -864,7 +739,6 @@ def get_tasks(document_id: int, firebase_user=Depends(get_current_user), db: Ses
         raw_output = result.stdout.strip()
         cleaned = re.sub(r"```json|```", "", raw_output).strip()
         tasks_json = json.loads(cleaned)
-        print(tasks_json)
     
         topic_ids = [dt.topic_id for dt in document.topics]
         saved = []
@@ -888,19 +762,19 @@ def get_tasks(document_id: int, firebase_user=Depends(get_current_user), db: Ses
 
             db.commit()
             print(f"Committed {len(saved)} tasks")
-
+        # dictionary of lists of tasks, categorized by status
         return {
             "BACKLOG": [t for t in tasks_json if t["status"] == "BACKLOG"],
             "IN PROGRESS": [t for t in tasks_json if t["status"] == "IN PROGRESS"],
             "REVISING": [t for t in tasks_json if t["status"] == "REVISING"],
             "DONE": [t for t in tasks_json if t["status"] == "DONE"],
         }
-            
 
     except Exception as e:
         return {"tasks": [], "error": str(e)}
     
 
+# fiends customiseable by user
 class UpdateTaskBody(BaseModel):
     status: str | None = None
     title: str | None = None
@@ -956,6 +830,7 @@ def get_tasks(topic_id: int, firebase_user=Depends(get_current_user), db: Sessio
     for doc_id in docs:
         existing_tasks = db.query(models.DocumentTask).filter_by(document_id=doc_id).all()
         if existing_tasks:
+            # if current document already has tasks, add them to the list in their respective status
             for dt in existing_tasks:
                 task = db.query(models.Task).filter(models.Task.id == dt.task_id).first()
                 if task.status == "BACKLOG":
@@ -996,6 +871,7 @@ def get_tasks(topic_id: int, firebase_user=Depends(get_current_user), db: Sessio
                     })
 
         else:
+            # if current document has no tasks yet, generate with LLM and save to DB, then append to list in BACKLOG status
             prompt = """
                 Generate a list of actionable study tasks based on this document that a user could follow to prepare for an exam. 
                 Each task should have the following fields:
@@ -1053,6 +929,7 @@ def get_tasks(topic_id: int, firebase_user=Depends(get_current_user), db: Sessio
             
                 topic_ids = [dt.topic_id for dt in document.topics]
                 saved = []
+                # persist to database and link to document and topic
                 for t in tasks_json:
                     task_obj = models.Task(
                         user_id=firebase_uid,
@@ -1081,6 +958,7 @@ def get_tasks(topic_id: int, firebase_user=Depends(get_current_user), db: Sessio
     
 
 @app.get("/tasks")
+# all tasks associated to user profile, across all documents and topics, categorized by status for kanban board display
 def get_all_tasks(firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
     firebase_uid = firebase_user["uid"]
 
@@ -1135,6 +1013,8 @@ def get_all_tasks(firebase_user=Depends(get_current_user), db: Session = Depends
 
 
 @app.get("/tasks/{task_id}/exercises") 
+# generate practice questions for a given task using LLM
+# this will only run for tasks in the DONE column and only when users click on "Practice" link
 def generate_exercises(task_id: int, firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
     
     firebase_uid = firebase_user["uid"]
@@ -1165,10 +1045,12 @@ def generate_exercises(task_id: int, firebase_user=Depends(get_current_user), db
         exercises_json = []
         print(f"Error generating exercises for task {task.id}: {e}")
 
+    # exercise_json will include a list of questions in JSON format with question and solution
     return {"exercises": exercises_json}
 
 
 from collections import defaultdict
+# TASK STATUS ANALYTICS
 @app.get("/tasks/analytics")
 def get_analytics(firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
     user_id = firebase_user['uid']
@@ -1187,3 +1069,24 @@ def get_analytics(firebase_user=Depends(get_current_user), db: Session = Depends
     return {
         "status_breakdown": status_data
     }
+
+# SENTIMENT TREND ANALYTICS
+@app.get("/sentiment/analytics")
+def get_analytics(firebase_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    user_id = firebase_user['uid']
+    entries = db.query(models.JournalEntry)\
+        .filter(models.JournalEntry.user_id == user_id)\
+        .order_by(models.JournalEntry.created_at.asc())\
+        .all()
+
+    data = [
+        {
+            "date": entry.created_at.strftime("%Y-%m-%d"),
+            "sentiment_polarity": entry.sentiment_polarity
+        }
+        for entry in entries
+    ]
+
+    return data
+
+app.include_router(router)

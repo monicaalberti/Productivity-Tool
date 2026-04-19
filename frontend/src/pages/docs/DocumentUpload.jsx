@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import '../components/UploadBox';
-import UploadBox from "../components/UploadBox";
+import '../../components/UploadBox';
+import UploadBox from "../../components/UploadBox";
 import { IoIosMenu } from "react-icons/io";
-import SidePanel from "../components/SidePanel";
-import '../styles/DocumentUpload.css';
+import SidePanel from "../../components/SidePanel";
+import '../../styles/DocumentUpload.css';
 
 function DocumentUpload() {
   const [isOpen, setIsOpen] = useState(false);

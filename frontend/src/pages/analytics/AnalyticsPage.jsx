@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
-import '../styles/AnalyticsPage.css'
-import SidePanel from "../components/SidePanel";
+import { useAuth } from '../../AuthContext';
+import '../../styles/AnalyticsPage.css'
+import SidePanel from "../../components/SidePanel";
 import { IoIosMenu } from "react-icons/io";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, ResponsiveContainer, Pie, Cell, Legend } from "recharts";
 import { Link } from 'react-router-dom';

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../../AuthContext";
 import { IoMdClose } from "react-icons/io";
-import "../styles/Document.css";
+import "../../styles/Document.css";
        
 
 function Document() {

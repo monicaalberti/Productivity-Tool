@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import DashboardCard from "../components/DashboardCard";
+import DashboardCard from "../../components/DashboardCard";
 import { IoIosMenu } from "react-icons/io";
-import "../styles/Dashboard.css";
-import SidePanel from "../components/SidePanel";
+import "../../styles/Dashboard.css";
+import SidePanel from "../../components/SidePanel";
 import { MdOutlineAccountCircle, MdViewKanban } from "react-icons/md";
 import { Link } from "react-router-dom";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../../AuthContext";
 
 import { FaUpload } from "react-icons/fa6";
 import { IoDocumentsOutline } from "react-icons/io5";
@@ -21,9 +21,10 @@ function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      <div className="bg-layer bg-back"></div>
+      {/* <div className="bg-layer bg-back"></div>
       <div className="bg-layer bg-front"></div>
-      <div className="bg-layer bg-front2"></div>
+      <div className="bg-layer bg-front2"></div> */}
+      <div className="bg-layer-img"></div>
       <div className="header" id="header-container">
         <div className="account">
         {user ? (

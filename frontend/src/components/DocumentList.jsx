@@ -97,7 +97,7 @@ function DocumentList({ topicView }) {
                                             <h2 className="topic-name">{topic.name}</h2>
                                             <ul>
                                             {topic.documents.map((doc) => (
-                                                <li key={doc.id}><Link to={`/documents/${doc.id}`} className="view-doc">{formatTitle(doc.title)} <FaRegFilePdf size={20} /></Link></li>
+                                                <li key={doc.id}><Link to={`/documents/${doc.id}`} className="view-doc">{formatTitle(doc.title)} <FaRegFilePdf size={20} /><TiDeleteOutline size={20} onClick={() => deleteDoc(doc.id)} /></Link></li>
                                             ))}
                                             </ul>
                                             <Link 

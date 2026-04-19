@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
-import SidePanel from '../components/SidePanel';
-import "../styles/DocumentDashboard.css";
+import SidePanel from '../../components/SidePanel';
+import "../../styles/DocumentDashboard.css";
 import { IoIosMenu } from "react-icons/io";
 import { FaRegFilePdf } from "react-icons/fa";
 import { FaSitemap } from "react-icons/fa";

@@ -1,11 +1,11 @@
 import React from "react";
-import DocumentList from "../components/DocumentList";
+import DocumentList from "../../components/DocumentList";
 import { IoIosMenu } from "react-icons/io";
-import SidePanel from "../components/SidePanel";
-import "../styles/Documents.css";
+import SidePanel from "../../components/SidePanel";
+import "../../styles/Documents.css";
 import { useState } from "react";
 import { SegmentedControl } from "@mantine/core";
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../../AuthContext';
 
 function Documents() {
   const [isOpen, setIsOpen] = useState(false);

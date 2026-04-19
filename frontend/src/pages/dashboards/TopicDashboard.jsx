@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { IoIosMenu } from "react-icons/io";
 import { useLocation, Link, useParams } from "react-router-dom"
-import SidePanel from "../components/SidePanel";
-import "../styles/TopicDashboard.css"
+import SidePanel from "../../components/SidePanel";
+import "../../styles/TopicDashboard.css"
 import { LuLayoutDashboard } from "react-icons/lu";
 import { FaRegFilePdf } from "react-icons/fa";
 import { FaSitemap } from "react-icons/fa";
