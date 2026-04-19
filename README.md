@@ -19,6 +19,7 @@ To run the source code on your machine, follow the steps below to set up both th
     - Paste your API key when prompted to do so;
 * Download Ollama at the following link: [Ollama Download](https://ollama.com/download)
     - Open the Ollama GUI
+    - Download the gemma3:4b model and the gemma3:1b model
 
 ### Start the backend application:
 * Run `uvicorn main:app --reload`.

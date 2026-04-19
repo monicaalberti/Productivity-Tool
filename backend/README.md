@@ -16,6 +16,7 @@ The backend of the StudyWeave platform is a FastAPI application. To run it local
     - Paste your API key when prompted to do so
 5. Download Ollama at the following link: [Ollama Download](https://ollama.com/download)
     - Open the Ollama GUI
+    - Download the gemma3:4b model and the gemma3:1b model
 
 ## Start the backend application:
 6. Run `uvicorn main:app --reload`.
